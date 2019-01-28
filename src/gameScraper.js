@@ -41,5 +41,4 @@ function getGameTeamStats(home, away, date, gameID) {
 }
 
 module.exports.getGameNumbersAtDate = getGameNumbersAtDate;
-module.exports.gameDateUrl = gameDateUrl;
 module.exports.seasonStart = seasonStart;
