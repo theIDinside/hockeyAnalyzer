@@ -9,9 +9,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.18.3",
     "cheerio": "^1.0.0-rc.2",
+    "cookie-parser": "^1.4.3",
     "express": "^4.16.4",
     "lodash": "^4.17.11",
+    "mongoose": "^5.4.7",
     "node-horseman": "^3.3.0",
     "phantom": "^6.0.3",
     "request": "^2.88.0",

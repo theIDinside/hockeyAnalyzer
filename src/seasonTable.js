@@ -1,8 +1,5 @@
 const C = require('cheerio')
-const rp = require('request-promise');
 const phantom = require('phantom');
-
-
 const NHLTeamStatsURL = "http://www.nhl.com/stats/team?reportType=season&seasonFrom=20182019&seasonTo=20182019&gameType=2&filter=gamesPlayed,gte,1&sort=points,wins";
 
 function getDiffStats(team) {
@@ -97,13 +94,8 @@ async function getTeamStandingsData() {
     return teams;
 }
 
-(async function() {
-    let results = await getTeamStandingsData();
-    let teamArray = []
-    let comp = compareTeams(results[0], results[30]);
-    console.log("Printing comparison. Positive numbers means home team has higher value (except for position in league). Negative numbers, means away team has higher value.");
-    for(let r in comp) {
-        let d = (r !== "teams") ? `${r} difference: ${comp[`${r}`]}` : `${r}: ${comp[`${r}`]}`
-        console.log(d)
-    }
-})()
+module.exports = {
+    getTeamStandingsData: getTeamStandingsData,
+    compareTeams: compareTeams,
+    getDiffStats: getDiffStats
+}
