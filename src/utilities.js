@@ -1,3 +1,5 @@
+const Constants = require('./constants')
+
 module.exports = {
     anyOf: (someValue, someValueArray) => {
         for(let i of someValueArray) {
@@ -10,6 +12,9 @@ module.exports = {
         let newDate = new Date(date);
         newDate.setUTCDate(newDate.getUTCDate() + days);
         return newDate;
+    },
+    getFullTeamName: (key) => {
+        return Constants.teams[key.trim()];
     }
 }
 

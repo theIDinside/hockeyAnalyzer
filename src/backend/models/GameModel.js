@@ -58,5 +58,16 @@ let GameModelSchema = new Schema({
     playersAway: {
         players: [PlayerGameModelSchema],
         goalies: [GoalieGameModelSchema]
-    }
+    },
+    scoringSummary: [ScoringSummarySchema]
+});
+
+let ScoringSummarySchema = new Schema({
+    goal: Number,
+    period: Number,
+    time: String,
+    strength: String,
+    team: String,
+    goalScorer: String,
+    assists: [String],
 });

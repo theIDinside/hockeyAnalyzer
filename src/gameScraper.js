@@ -1,4 +1,5 @@
 const C = require('cheerio')
+const Constants = require('./constants')
 const phantom = require('phantom');
 const l = msg => console.log(msg);
 const {anyOf, daysFrom} = require('./utilities');
@@ -58,7 +59,8 @@ async function scrapeGameSummaryReport(gameID, season="20182019") {
 
 }
 
-function Goal(goalNumber, period, time, strength, scoringTeam, goalScorer, assists, playersOnIceHome, playersOnIceAway) {
+function Goal(goalNumber, period, time, strength, scoringTeam, goalScorer, assists, playersOnIceAway, playersOnIceHome) {
+    this.rawStringData = `${goalNumber} ${period} ${time} ${strength} ${scoringTeam} ${goalScorer} ${assists} ${playersOnIceAway} ${playersOnIceHome}`
     this.goalNumber = goalNumber;
     this.period = period;
     this.time = time;
@@ -75,6 +77,32 @@ function Goal(goalNumber, period, time, strength, scoringTeam, goalScorer, assis
                 return true;
         }
         return false;
+    };
+    this.isGood = () => {
+        if(this.period === "SO") // if it's a shootout goal in shootout OT, then we wont be trying to analyze the data. Therefore the goal will be no good for our purposes
+            return false;
+        return this.goalNumber !== "-";
+    };
+    this.goalNumber = () => {
+        return Number.parseInt(this.goalNumber);
+    }
+    this.getScoringPeriod  = () => {
+        if(this.period === "OT")
+            return 4;
+        else
+            return Number.parseInt(this.period)
+    }
+    this.getPlayerJersey = () => {
+        return Number.parseInt(this.getPlayerJerseyStr());
+    };
+    this.getPlayerJerseyStr = () => {
+        return this.player.split(" ")[0];
+    };
+    this.getPlayerName = () => {
+        return this.player.split(" ")[1].split("(")[0];
+    }
+    this.getJerseyAndName = () => {
+        return `#${this.player.split("(")[0]}`;
     }
 }
 
@@ -94,14 +122,80 @@ function Penalty(team, number, period, time, player, minutes, penaltyType, isMin
     }
 }
 
+function ScoringSummary(htmlData) {
+    let dataNav = C.load(htmlData)
+    let summary = dataNav('tbody').children().filter((i, e) => i === 4).each((index, row) => {
+            /* scrape scoring summary sub table, example:
+            // this is how the data, in the scoring summary looks, but the | | represents the <td> </td> in the html.
+            let tmpstr = "1|2|5:01|EV|NSH|13 N.BONINO(13)|19 C.JARNKROK(10)||4, 10, 13, 14, 19, 35|1, 4, 10, 11, 13, 16"
+            let res = tmpstr.split("|").map((e, index) => {
+                if(index < 8) {
+                    if(e === "")
+                    return "None";
+                else 
+                    return e;
+                } else  {
+                    return e.split(",").map(e => e.trim()).map(e => Number.parseInt(e))
+                }
+            })*/
+            let ScoringSummary = dataNav(row).children().children().children().children().filter((idx, elem) => idx > 1).map((rowNumber, rowScoreData) => { 
+                    // iterate through the td's
+                let score = dataNav(rowScoreData).children().map((idx, td) => {
+                    if((idx === 7 || idx === 8) && dataNav(td).text() === "") {
+                        // if there are no primary and secondary assists 
+                        return "None";
+                    } else if((idx == 8) && dataNav(td).prev().attr("colspan") === "2") {
+                        return dataNav(td).text().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
+                    } else if(idx > 8) {
+                        return dataNav(td).text().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
+                    } else {
+                        return dataNav(td).text();
+                    }
+                }).get();
+                // now we can use spread syntax as arguments. Beautiful.
+                let g = new Goal(...score);
+                return g;
+            }).get().filter(goal => goal.isGood());
+            return ScoringSummary;
+    });
+    this.summary = summary;
+}
 
 function Summary(htmlData) {
     let dataNav = C.load(htmlData)
     let tableRows = dataNav('tbody').children().each((index, row) => {
         if(index === 4) {
-            // scrape scoring summary sub table
-            // example:
-            let goal = new Goal(1, 2, "5:01", "EV", "NSH", "#13 N.BONINO(13)", ["19 C.JARNKROK(10)"], [1, 4, 10, 11, 13, 16], [4, 10, 13, 14, 19, 35])
+            /* scrape scoring summary sub table, example:
+            // this is how the data, in the scoring summary looks, but the | | represents the <td> </td> in the html.
+            let tmpstr = "1|2|5:01|EV|NSH|13 N.BONINO(13)|19 C.JARNKROK(10)||4, 10, 13, 14, 19, 35|1, 4, 10, 11, 13, 16"
+            let res = tmpstr.split("|").map((e, index) => {
+                if(index < 8) {
+                    if(e === "")
+                    return "None";
+                else 
+                    return e;
+                } else  {
+                    return e.split(",").map(e => e.trim()).map(e => Number.parseInt(e))
+                }
+            })*/
+            let ScoringSummary = dataNav(row).children().children().children().children().filter((idx, elem) => idx > 1).map((rowNumber, rowScoreData) => { 
+                    // iterate through the td's
+                let score = dataNav(rowScoreData).map((idx, td) => {
+                    if((idx === 7 || idx === 8) && dataNav(td).text() === "") {
+                        // if there are no primary and secondary assists 
+                        return "None";
+                    } else if((idx == 8) && dataNav(td).prev().attr("colspan") === "2") {
+                        return dataNav(td).text().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
+                    } else if(idx > 8) {
+                        return dataNav(td).text().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
+                    } else {
+                        return dataNav(td).text();
+                    }
+                }).get();
+                // now we can use spread syntax as arguments. Beautiful.
+                let g = new Goal(...score);
+                return g;
+            }).get().filter(goal => goal.isGood());
         } else if(index === 7) {
             // scrape penalty summary sub table
             // example:
