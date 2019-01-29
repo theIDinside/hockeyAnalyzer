@@ -28,8 +28,32 @@ function compareTeams(teamA, teamB) {
     return comparison;
 }
 
+function Team(position, name, gp, wins, loss, ties, otloss, pts, rotwins, ptspct, gf, ga, sowins, gfgame, gagame, pp, pk, sfgame, sagame, fowins) {
+    this.raw = `${position} ${name} ${gp} ${wins} ${loss} ${ties} ${otloss} ${pts} ${rotwins} ${ptspct} ${gf} ${ga} ${sowins} ${gfgame} ${gagame} ${pp} ${pk} ${sfgame} ${sagame} ${fowins}`;
+    this.position = position;
+    this.name = name;
+    this.gamesPlayed = gp;
+    this.wins = wins;
+    this.losses = loss;
+    this.ties = ties;
+    this.otlosses = otloss;
+    this.points = pts;
+    this.rotwins = rotwins;
+    this.pointsPercent = ptspct;
+    this.goalsFor = gf;
+    this.goalsAgainst = ga;
+    this.shootoutWins = sowins;
+    this.goalsForPerGame = gfgame;
+    this.goalsAgainstPerGame = gagame;
+    this.powerplay = pp;
+    this.penaltyKill = pk;
+    this.shotsForPerGame = sfgame;
+    this.shotsAgainstPerGame = sagame;
+    this.faceoffWins = fowins;
+}
+
 async function getTeamStandingsData() {
-    let teams = []
+    let seasonStandings = []
     const instance = await phantom.create();
     const page = await instance.createPage();
     console.log("Requesting data from www.nhl.com/stats... Please wait")
@@ -44,51 +68,10 @@ async function getTeamStandingsData() {
         let iter = data(elem).children().children().map((i, e) => {
             return data(e).text()
         }).get()
-        const pos = iter[0]
-        const name = iter[1]
-        const season = iter[2]
-        const GP = iter[3]
-        const WINS = iter[4]
-        const LOSS = iter[5]
-        const TIED = iter[6]
-        const OTLOSS = iter[7]
-        const POINTS = iter[8]
-        const R_OT_WINS = iter[9]
-        const POINTS_PCT = iter[10]
-        const GF = iter[11]
-        const GA = iter[12]
-        const SOWINS = iter[13]
-        const GF_PER_GAME = iter[14]
-        const GA_PER_GAME = iter[15]
-        const PP = iter[16]
-        const PK = iter[17]
-        const SHOTS_PER_GAME = iter[18]
-        const SA_PER_GAME = iter[19]
-        const FACEOFF_WINS = iter[20]
-        const teamStanding = {
-            name: name,
-            position: pos,
-            gamesplayed: GP,
-            wins: WINS,
-            losses: LOSS,
-            tied: TIED,
-            ot_losses: OTLOSS,
-            points: POINTS,
-            regular_ot_wins: R_OT_WINS,
-            point_percentage: POINTS_PCT,
-            goals_for: GF,
-            goals_against: GA,
-            shootout_wins: SOWINS,
-            goals_avg: GF_PER_GAME,
-            goals_against_avg: GA_PER_GAME,
-            powerplay: PP,
-            penaltykill: PK,
-            shotstaken_avg: SHOTS_PER_GAME,
-            shotsagainst_avg: SA_PER_GAME,
-            faceoff_wins: FACEOFF_WINS
-        }
-        
-        teams.push(teamStanding);
+
+        iter.splice(2, 1);
+        let team = new Team(...iter);        
+        seasonStandings.push(team);
     })
     await instance.exit();
     return teams;
