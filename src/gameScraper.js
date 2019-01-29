@@ -52,7 +52,7 @@ function getGameTeamStats(home, away, date, gameID) {
  * 
  * @param { string } season  
  * @param { string } gameID 
- * @returns { Promise<Summary> }
+ * @returns { Promise<GameSummary> }
  */
 async function scrapeGameSummaryReport(gameID, season="20182019") {
     let summaryURL = `http://www.nhl.com/scores/htmlreports/${season}/GS${gameID}.HTM`
@@ -161,7 +161,11 @@ function ScoringSummary(htmlData) {
     this.summary = summary;
 }
 
-function Summary(htmlData) {
+function PeriodSummary(htmlData) {
+    
+}
+
+function GameSummary(htmlData) {
     let dataNav = C.load(htmlData)
     let tableRows = dataNav('tbody').children().each((index, row) => {
         if(index === 4) {
