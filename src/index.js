@@ -1,5 +1,5 @@
-const gs = require('./gameScraper');
-const st = require('./seasonTable');
+const gs = require('./scrape/gameScraper');
+const st = require('./scrape/seasonTable');
 const {anyOf, daysFrom} = require('./utilities');
 const l = (msg) => console.log(msg);
 (async function() {

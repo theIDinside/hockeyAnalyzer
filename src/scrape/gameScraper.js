@@ -1,8 +1,8 @@
 const C = require('cheerio')
-const Constants = require('./constants')
+const Constants = require('../constants')
 const phantom = require('phantom');
 const l = msg => console.log(msg);
-const {anyOf, daysFrom} = require('./utilities');
+const {anyOf, daysFrom} = require('../utilities');
 
 const seasonStart = '2018-10-03'
 const today = new Date().toLocaleDateString()
