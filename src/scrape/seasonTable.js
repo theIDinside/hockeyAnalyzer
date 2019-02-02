@@ -50,6 +50,25 @@ function Team(position, name, gp, wins, loss, ties, otloss, pts, rotwins, ptspct
     this.shotsForPerGame = sfgame;
     this.shotsAgainstPerGame = sagame;
     this.faceoffWins = fowins;
+
+    this.compareTo = (otherTeam) => {
+        let diffs = {
+            teams: { teamA: this, teamB: otherTeam },
+            shotsFor: Number.parseFloat(this.shotsForPerGame) - Number.parseFloat(otherTeam.shotsForPerGame),
+            shotsAgainst: Number.parseFloat(this.shotsAgainstPerGame) - Number.parseFloat(otherTeam.shotsAgainstPerGame),
+            goals: Number.parseFloat(this.goalsForPerGame) - Number.parseFloat(otherTeam.goalsForPerGame),
+            goalsAgainst: Number.parseFloat(this.goalsAgainstPerGame) - Number.parseFloat(otherTeam.goalsAgainstPerGame),
+            wins: Number.parseFloat(this.wins) - Number.parseFloat(otherTeam.wins),
+            loss: Number.parseFloat(this.losses) - Number.parseFloat(otherTeam.losses),
+            savePct: (1 - Number.parseFloat(this.goalsAgainstPerGame) / Number.parseFloat(this.shotsAgainstPerGame)) - 
+                (1 - Number.parseFloat(otherTeam.goalsAgainstPerGame) / Number.parseFloat(otherTeam.shotsAgainstPerGame))
+        };
+        return diffs;
+    }
+    this.getPosition = () => Number.parseInt(this.position);
+    this.getRawData = () => this.raw;
+    this.getName = () => this.name;
+    this.getPoints = () => Number.parseInt(this.points);
 }
 
 async function getTeamStandingsData() {
@@ -74,11 +93,12 @@ async function getTeamStandingsData() {
         seasonStandings.push(team);
     })
     await instance.exit();
-    return teams;
+    return seasonStandings;
 }
 
 module.exports = {
     getTeamStandingsData: getTeamStandingsData,
     compareTeams: compareTeams,
-    getDiffStats: getDiffStats
+    getDiffStats: getDiffStats,
+    Team: Team
 }

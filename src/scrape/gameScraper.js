@@ -1,41 +1,50 @@
 const C = require('cheerio')
 const Constants = require('../constants')
 const phantom = require('phantom');
-const l = msg => console.log(msg);
-const {anyOf, daysFrom} = require('../utilities');
+const puppeteer = require('puppeteer');
+const req = require('request');
+let axios = require('axios');
+const {anyOf, daysFrom, dateStringify, getFullTeamName, l} = require('../utilities');
 
 const seasonStart = '2018-10-03'
-const today = new Date().toLocaleDateString()
-const gameCenterButtonClass = `li.g5-component--nhl-scores__buttons-item`
+const getGamesListItem = (dateString) => `nhl-scores__${dateString}`;
+const getGamePageURL = (gameNumber) => `https://www.nhl.com/gamecenter/201802${gameNumber}`
 
 /// This function, retrieves from the site, the games for the coming 6 days (including the provided date in the argument. This is I guess somehow, what the site prefetches or something.)
-async function getGameNumbersAtDate(date) {
+async function getGameIDsAtDate(date) {
+    let currDate = new Date(date);
+    let stopDate = new Date(currDate);
+    stopDate.setUTCDate(stopDate.getUTCDate() + 1);
     if(date !== String)
-    {
-        l("Date is a date object and not string")
         date = date.toISOString().split("T")[0]
-    }
     let gamesDateURL = `https://www.nhl.com/scores/${date}`;
-    let gameCardClass = "g5-component--nhl-scores__game-wrapper"
-    const pInstance = await phantom.create();
-    const page = await pInstance.createPage();
-    await page.on('onResourceRequested', function(requestData) {});
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(gamesDateURL);
+    const _ = page.evaluate(() => {});
+    const htmlData = await page.content();
     l(`Requesting data from: ${gamesDateURL}... Please wait`);
-    const status = await page.open(gamesDateURL)
-    const content = await page.property('content')
-    let navData = C.load(content);
-    l(`Printing games starting at ${date} and 6 days forward, ${daysFrom(date, 6).toISOString().split("T")[0]}`)
-    let gameList = navData(`div.${gameCardClass}`).each((index, element) => {
-        let gameNumber = navData(element).children().first().attr('id');
-        l(`GameID: ${gameNumber}`);
-    })
-
-    await pInstance.exit()
-    return "someDataGoesHere";
+    let navData = C.load(htmlData);
+    let gamesAtDate = getGamesListItem(date);
+    stopDate = dateStringify(stopDate);
+    let gameStopListItem = getGamesListItem(stopDate);
+    let games = navData(`#${gamesAtDate}`).nextUntil(`#${gameStopListItem}`).map((i, e) => navData(e).children().children().children().first().attr("id")).get();
+    browser.close();
+    return games;
 }
 
-function getGamePageURL(gameNumber) {
-    return `https://www.nhl.com/gamecenter/201802${gameNumber}`
+function getGameIDsAtDateHTML(date, htmlData) {
+    let currDate = new Date(date);
+    let stopDate = new Date(currDate);
+    stopDate.setUTCDate(stopDate.getUTCDate() + 1);
+    if(date !== String)
+        date = date.toISOString().split("T")[0]
+    let navData = C.load(htmlData);
+    let gamesAtDate = getGamesListItem(date);
+    stopDate = dateStringify(stopDate);
+    let gameStopListItem = getGamesListItem(stopDate);
+    let games = navData(`#${gamesAtDate}`).nextUntil(`#${gameStopListItem}`).map((i, e) => navData(e).children().children().children().first().attr("id")).get();
+    return games;
 }
 
 function getGameTeamStats(home, away, date, gameID) {
@@ -54,22 +63,29 @@ function getGameTeamStats(home, away, date, gameID) {
  * @param { string } gameID 
  * @returns { Promise<GameSummary> }
  */
-async function scrapeGameSummaryReport(gameID, season="20182019") {
-    let summaryURL = `http://www.nhl.com/scores/htmlreports/${season}/GS${gameID}.HTM`
-
+async function scrapeGameSummaryReport(summaryReportURL, season="20182019") {
+    // let summaryURL = `http://www.nhl.com/scores/htmlreports/${season}/GS${gameID}.HTM`
+    let htmlData = await axios(summaryReportURL).then(res => {
+        l("Summary report data downloaded. Begin scraping...")
+        return res.data
+    }).catch(err => {
+        l(`Error while trying to download the data: ${err}`)
+    });
+    let summary = new ScoringSummary(htmlData);
+    return summary;
 }
 
-function Goal(goalNumber, period, time, strength, scoringTeam, goalScorer, assists, playersOnIceAway, playersOnIceHome) {
-    this.rawStringData = `${goalNumber} ${period} ${time} ${strength} ${scoringTeam} ${goalScorer} ${assists} ${playersOnIceAway} ${playersOnIceHome}`
+function Goal(goalNumber, period, time, strength, scoringTeam, goalScorer, assist1, assist2, onIceAway, onIceHome) {
     this.goalNumber = goalNumber;
     this.period = period;
     this.time = time;
     this.strength = strength;
     this.scoringTeam = scoringTeam;
     this.goalScorer = goalScorer;
-    this.assists = assists;
-    this.playersOnIceHome = playersOnIceHome;
-    this.playersOnIceAway = playersOnIceAway;
+    this.assists = [assist1, assist2];
+    this.playersOnIceHome = [...onIceHome.players];
+    this.playersOnIceAway = [...onIceAway.players];
+    this.rawStringData = `${goalNumber} ${period} ${time} ${strength} ${scoringTeam} ${goalScorer} ${assist1} ${assist2} ${this.playersOnIceAway} ${this.playersOnIceHome}`
     this.isEmptyNet = () => {
         let tmp = strength.split("-");
         for(let a of tmp) {
@@ -83,15 +99,15 @@ function Goal(goalNumber, period, time, strength, scoringTeam, goalScorer, assis
             return false;
         return this.goalNumber !== "-";
     };
-    this.goalNumber = () => {
+    this.getGoalNumber = () => {
         return Number.parseInt(this.goalNumber);
-    }
+    };
     this.getScoringPeriod  = () => {
         if(this.period === "OT")
             return 4;
         else
             return Number.parseInt(this.period)
-    }
+    };
     this.getPlayerJersey = () => {
         return Number.parseInt(this.getPlayerJerseyStr());
     };
@@ -100,9 +116,15 @@ function Goal(goalNumber, period, time, strength, scoringTeam, goalScorer, assis
     };
     this.getPlayerName = () => {
         return this.player.split(" ")[1].split("(")[0];
-    }
+    };
     this.getJerseyAndName = () => {
         return `#${this.player.split("(")[0]}`;
+    };
+    this.printRawData = () => {
+        l(this.rawStringData);
+    };
+    this.prettyString = () => {
+        return `${this.goalNumber} \t ${this.period} \t ${this.time} \t ${this.strength} \t ${this.scoringTeam} \t ${this.goalScorer} \t ${this.assists[0]} \t ${this.assists[1]} \t ${this.playersOnIceAway} \t ${this.playersOnIceHome}`;
     }
 }
 
@@ -124,94 +146,53 @@ function Penalty(team, number, period, time, player, minutes, penaltyType, isMin
 
 function ScoringSummary(htmlData) {
     let dataNav = C.load(htmlData)
-    let summary = dataNav('tbody').children().filter((i, e) => i === 4).each((index, row) => {
-            /* scrape scoring summary sub table, example:
-            // this is how the data, in the scoring summary looks, but the | | represents the <td> </td> in the html.
-            let tmpstr = "1|2|5:01|EV|NSH|13 N.BONINO(13)|19 C.JARNKROK(10)||4, 10, 13, 14, 19, 35|1, 4, 10, 11, 13, 16"
-            let res = tmpstr.split("|").map((e, index) => {
-                if(index < 8) {
-                    if(e === "")
-                    return "None";
-                else 
-                    return e;
-                } else  {
-                    return e.split(",").map(e => e.trim()).map(e => Number.parseInt(e))
-                }
-            })*/
-            let ScoringSummary = dataNav(row).children().children().children().children().filter((idx, elem) => idx > 1).map((rowNumber, rowScoreData) => { 
+    let summary = dataNav('tbody').children().filter((i, e) => i === 3).map((index, row) => {
+        let ScoringSummary = dataNav(row).children().children().children().children().filter((index, elem) => index > 0).map((rowNumber, rowScoreData) => { 
                     // iterate through the td's
-                let score = dataNav(rowScoreData).children().map((idx, td) => {
-                    if((idx === 7 || idx === 8) && dataNav(td).text() === "") {
-                        // if there are no primary and secondary assists 
-                        return "None";
-                    } else if((idx == 8) && dataNav(td).prev().attr("colspan") === "2") {
-                        return dataNav(td).text().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
-                    } else if(idx > 8) {
-                        return dataNav(td).text().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
-                    } else {
-                        return dataNav(td).text();
-                    }
-                }).get();
-                // now we can use spread syntax as arguments. Beautiful.
-                let g = new Goal(...score);
-                return g;
-            }).get().filter(goal => goal.isGood());
-            return ScoringSummary;
-    });
+            let score = dataNav(rowScoreData).children().map((idx, td) => {
+                if((idx === 6 && dataNav(td).text() == "unassisted")) {
+                    // if there are no primary and secondary assists 
+                    return "None";
+                } else if((idx === 7) && dataNav(td).prev().text() === "unassisted") {
+                    return "None";
+                } else if((idx === 7) && dataNav(td).prev().attr("colspan") === 2) {
+                    l(((idx === 7) && dataNav(td).prev().attr("colspan") === "2"));
+                    return dataNav(td).text().trim().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
+                } else if(idx > 7) {
+                    let pOnIce = dataNav(td).text().trim().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
+                    return { players: pOnIce };
+                } else {
+                    return dataNav(td).text();
+                }
+            }).get();
+            // now we can use spread syntax as arguments. Beautiful.
+            let g = new Goal(...score);
+            return g;
+        }).get().filter(goal => goal.isGood());
+        return ScoringSummary;
+    }).get();
+
     this.summary = summary;
+    this.printScoringSummary = () => {
+        l(`Goal # \t Period Time \t Strength \t Team \t Scorer \t 1st Ass. \t 2nd Ass. \t On ice away \t On ice home`);
+        for(let g of this.summary) {
+            l(g.prettyString());
+        }
+    }
 }
 
 function PeriodSummary(htmlData) {
     
 }
 
-function GameSummary(htmlData) {
-    let dataNav = C.load(htmlData)
-    let tableRows = dataNav('tbody').children().each((index, row) => {
-        if(index === 4) {
-            /* scrape scoring summary sub table, example:
-            // this is how the data, in the scoring summary looks, but the | | represents the <td> </td> in the html.
-            let tmpstr = "1|2|5:01|EV|NSH|13 N.BONINO(13)|19 C.JARNKROK(10)||4, 10, 13, 14, 19, 35|1, 4, 10, 11, 13, 16"
-            let res = tmpstr.split("|").map((e, index) => {
-                if(index < 8) {
-                    if(e === "")
-                    return "None";
-                else 
-                    return e;
-                } else  {
-                    return e.split(",").map(e => e.trim()).map(e => Number.parseInt(e))
-                }
-            })*/
-            let ScoringSummary = dataNav(row).children().children().children().children().filter((idx, elem) => idx > 1).map((rowNumber, rowScoreData) => { 
-                    // iterate through the td's
-                let score = dataNav(rowScoreData).map((idx, td) => {
-                    if((idx === 7 || idx === 8) && dataNav(td).text() === "") {
-                        // if there are no primary and secondary assists 
-                        return "None";
-                    } else if((idx == 8) && dataNav(td).prev().attr("colspan") === "2") {
-                        return dataNav(td).text().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
-                    } else if(idx > 8) {
-                        return dataNav(td).text().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
-                    } else {
-                        return dataNav(td).text();
-                    }
-                }).get();
-                // now we can use spread syntax as arguments. Beautiful.
-                let g = new Goal(...score);
-                return g;
-            }).get().filter(goal => goal.isGood());
-        } else if(index === 7) {
-            // scrape penalty summary sub table
-            // example:
-            let penalty = 
-            new Penalty("NSH", 1, 1, "1:43", "#42 C. BLACKWELL", 2, "Elbowing", true /* can be omitted for minors. Penalties are generally minors.*/)
-        } else if(index === 9) {
-            // scrape by-period summary sub table
-        }
-    })
-    this.scoring = []
+async function scrapeGamesPlayed() {
+    let today = new Date();
 }
 
 
-module.exports.getGameNumbersAtDate = getGameNumbersAtDate;
+
+module.exports.getGameIDsAtDate = getGameIDsAtDate;
 module.exports.seasonStart = seasonStart;
+module.exports.getGameIDsAtDateHTML = getGameIDsAtDateHTML;
+module.exports.ScoringSummary = ScoringSummary;
+module.exports.scrapeGameSummaryReport = scrapeGameSummaryReport;

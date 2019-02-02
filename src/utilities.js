@@ -1,4 +1,6 @@
 const Constants = require('./constants')
+const dateStringify = (date) => date.toISOString().split("T")[0];
+const l = msg => console.log(msg);
 
 module.exports = {
     anyOf: (someValue, someValueArray) => {
@@ -15,6 +17,9 @@ module.exports = {
     },
     getFullTeamName: (key) => {
         return Constants.teams[key.trim()];
-    }
+    },
+    dateStringify: dateStringify,
+    l: l,
+    log: l
 }
 
