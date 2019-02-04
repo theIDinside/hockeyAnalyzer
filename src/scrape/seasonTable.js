@@ -1,6 +1,7 @@
 const C = require('cheerio')
 const phantom = require('phantom');
 const NHLTeamStatsURL = "http://www.nhl.com/stats/team?reportType=season&seasonFrom=20182019&seasonTo=20182019&gameType=2&filter=gamesPlayed,gte,1&sort=points,wins";
+const puppeteer = require('puppeteer');
 
 function getDiffStats(team) {
     let diffs = {
@@ -72,16 +73,14 @@ function Team(position, name, gp, wins, loss, ties, otloss, pts, rotwins, ptspct
 }
 
 async function getTeamStandingsData() {
-    let seasonStandings = []
-    const instance = await phantom.create();
-    const page = await instance.createPage();
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
     console.log("Requesting data from www.nhl.com/stats... Please wait")
-    await page.on('onResourceRequested', function(requestData) {});
-    const status = await page.open(NHLTeamStatsURL);
-    const content = await page.property('content');
-    let data = C.load(content)
+    const status = await page.goto(NHLTeamStatsURL, {waitUntil: "networkidle2"});
+    const content = await page.content();
     console.log("Data retrieved... organizing data")
-    let dataTable = data('div.rt-tbody').children().each((index, elem) => {
+    let data = C.load(content)
+    let seasonStandings = data('div.rt-tbody').children().map((index, elem) => {
         // here, each elem, represents the div row group. To get individual cells, we need to call children() once again, on elem
         // console.log(data(elem).text())
         let iter = data(elem).children().children().map((i, e) => {
@@ -89,10 +88,9 @@ async function getTeamStandingsData() {
         }).get()
 
         iter.splice(2, 1);
-        let team = new Team(...iter);        
-        seasonStandings.push(team);
-    })
-    await instance.exit();
+        return new Team(...iter);
+    }).get();
+    browser.close();
     return seasonStandings;
 }
 

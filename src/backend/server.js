@@ -1,13 +1,22 @@
 const express = require('express');
 const mongoose = require('mongoose');
 
-let mongodbHost = 'http://127.0.0.1';
+const Standings = require('./models/StandingsModel')
+const Game = require('./models/GameModel')
+const Player = require('./models/PlayerModel')
+const Team = require('./models/TeamModel')
+
+
+let mongodbHost = 'mongodb://localhost/test';
+let databaseName = ""
+
+const mongoDBHost = () => `mongodb://localhost/${databaseName}`;
 
 function getDatabase(db) {
     return `${mongodbHost}/${db}`;
 }
 
-mongoose.connect(getDatabase("nhl"));
+mongoose.connect(mongoDBHost());
 mongoose.Promise = global.Promise;
 
 let db = mongoose.connection;

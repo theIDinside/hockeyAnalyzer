@@ -1,3 +1,4 @@
+// THIS WILL LATER BE REMOVED. This file should later on define the startup sequence for the server. It now is a test placeholder
 const gs = require('./scrape/gameScraper');
 const st = require('./scrape/seasonTable');
 const {anyOf, daysFrom} = require('./utilities');
@@ -39,4 +40,9 @@ async function getHTMLData(url) {
     }).catch(err => {
         l(err);
     })
+    let standings = await st.getTeamStandingsData();
+    l("NHL Table")
+    for(let t of standings) {
+        l(t.getRawData());
+    }
 })()

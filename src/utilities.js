@@ -1,6 +1,12 @@
 const Constants = require('./constants')
 const dateStringify = (date) => date.toISOString().split("T")[0];
 const l = msg => console.log(msg);
+const getGameURL = (date) => {
+    if(date !== String)
+        date = date.toISOString().split("T")[0];
+    return `https://www.nhl.com/scores/${date}`;
+}
+
 
 module.exports = {
     anyOf: (someValue, someValueArray) => {
@@ -20,6 +26,7 @@ module.exports = {
     },
     dateStringify: dateStringify,
     l: l,
-    log: l
+    log: l,
+    getGameURL
 }
 

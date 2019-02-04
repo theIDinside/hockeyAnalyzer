@@ -10,7 +10,7 @@ let Schema = mongoose.Schema;
 let PlayerGameModelSchema = new Schema({
     jersey:         Number,
     name:           String,
-    position:       String,
+    position:       { type: String, enum: ["Forward", "Defense"] },
     goals:          Number,
     assists:        Number, 
     points:         Number,
@@ -38,19 +38,43 @@ let GoalieGameModelSchema = new Schema({
     timeOnIce: { minutes: Number, seconds: Number },
 });
 
+let ScoringSummarySchema = new Schema({
+    goal: Number,
+    period: Number,
+    time: String,
+    strength: {
+        type: String,
+        required: true,
+        enum: ['Even', 'Penalty Shot', 'Even Empty Net']
+    },
+    team: String,
+    goalScorer: String,
+    assists: [String],
+});
 
+
+/**
+ * Data that get scraped from, for example: https://www.nhl.com/gamecenter/chi-vs-buf/2019/02/01/2018020781#game=2018020781,game_state=final,game_tab=stats
+ * (example is URL to game between Chicago Blackhawks vs Buffalo Sabres (N.B! nhl format; Away vs Home)
+ */
 let GameModelSchema = new Schema({
-    gameID:         { type: String, required: true, max: 25},
-    teams:          { home: String,  away: String },
+    gameID:         { type: String, required: true, unique: true},
+    teams:          { away: String,  home: String, required: true },
     datePlayed:     { type: Date, required: true },
-    finalResult:    { home: Number, away: Number },
-    shotsOnGoal:    { home: Number, away: Number },
-    faceOffWins:    { home: Number, away: Number },
-    powerPlay:      { home: { pps: Number, goals: Number }, away: { pps: Number, goals: Number } },
-    penaltyMinutes: { home: Number, away: Number },
-    hits:           { home: Number, away: Number },
-    blockedShots:   { home: Number, away: Number },
-    giveAways:      { home: Number, away: Number },
+    finalResult:    { away: Number, home: Number, required: true  },
+    shotsOnGoal:    {
+        type: [{ away: Number, home: Number}],
+        validate: {
+            validator: (periods) => periods.length >= 3,
+            messsage: props => `You must provide stats for 3 periods at least, you provided ${props.value.length} periods`
+        }
+    },
+    faceOffWins:    { away: Number, home: Number, required: true  },
+    powerPlay:      { away: { pps: Number, goals: Number }, home: { pps: Number, goals: Number } },
+    penaltyMinutes: { away: Number, home: Number },
+    hits:           { away: Number, home: Number },
+    blockedShots:   { away: Number, home: Number },
+    giveAways:      { away: Number, home: Number },
     playersHome: {
         players: [PlayerGameModelSchema], // each game, will have a subdocument included for every player who participated in the game
         goalies: [GoalieGameModelSchema]
@@ -62,12 +86,16 @@ let GameModelSchema = new Schema({
     scoringSummary: [ScoringSummarySchema]
 });
 
-let ScoringSummarySchema = new Schema({
-    goal: Number,
-    period: Number,
-    time: String,
-    strength: String,
-    team: String,
-    goalScorer: String,
-    assists: [String],
-});
+GameModelSchema.methods.getTeams = () => {
+    return [this.teams.home, this.teams.away];
+}
+
+GameModelSchema.methods.getTotalShots = () => {
+    for(let period of this.shotsOnGoal) {
+
+    }
+}
+
+
+
+
