@@ -5,7 +5,7 @@ const StandingCollection = "standings";
     This is not a collection that will keep multiple records. It will only keep one, the most current and updated season standing
 */
 
-/// together with general game team stats, so this data will be available in the future.
+/// together with general game scoringTeam stats, so this data will be available in the future.
 let SeasonStandings = new Schema({
     position:           Number,
     teamName:           String,

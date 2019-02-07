@@ -1,25 +1,17 @@
 const C = require('cheerio')
-const Constants = require('../constants')
+const Constants = require('../util/constants')
 const puppeteer = require('puppeteer');
 let axios = require('axios');
-const {anyOf, daysFrom, dateStringify, getFullTeamName, l} = require('../utilities');
+const {anyOf, daysFrom, dateStringify, getFullTeamName, l, Int, Float, removePrefixOf} = require('../util/utilities');
 const {Goal, ScoringSummary} = require('./ScoringSummary')
+const {Time, MakeTime} = require('../util/Time');
+
+
 const getGamesListItem = (dateString) => `nhl-scores__${dateString}`;
 const getGamePageURL = (gameNumber) => `https://www.nhl.com/gamecenter/201802${gameNumber}`
 const getGameSummaryURL = (gameID) => {
     let tmp = gameID.toString();
     return `http://www.nhl.com/scores/htmlreports/20182019/GS02${removePrefixOf(tmp, 6)}.HTM`
-}
-
-const removePrefixOf = (str, len) => {
-    try {
-        if(str.length < len) {
-            throw Error("Prefix length is longer than actual string");
-        }
-        return str.split().splice(0, len).join();
-    } catch(err) {
-        return str;
-    }
 }
 
 
@@ -59,27 +51,6 @@ function getGameIDsAtDateHTML(date, htmlData) {
     return games;
 }
 
-async function scrapeGame(gameID) {
-    let [away, home, atDate] = getTeamsPlayingIn(gameID);
-    let [y,m,d] = atDate.toISOString().split("T")[0].split("-")
-
-    // OBS OBS OBS NB NB NB! In NHL, different from SHL or how european standard define home and away, is different. So SHL, it would look like: Home vs Away. In NHL it's Away vs Home
-    let gameStatsURL = `https://www.nhl.com/gamecenter/${away}-vs-${home}/${y}/${m}/${d}/${gameID}#game=${gameID},game_state=final,game_tab=stats`
-    let summaryURL = getGameSummaryURL(gameID);
-    let summary = scrapeGameSummaryReport(summaryURL);
-    let gameStats = scrapeGameStats(gameStatsURL);
-
-    Promise.all([summary, gameStats]).then(values => {
-        let [summaryReportResult, gameStatsResult] = values;
-
-    })
-
-}
-
-async function scrapeGameStats(gameStatsURL) {
-
-}
-
 /**
  * 
  * @param { string } summaryReportURL  
@@ -88,23 +59,20 @@ async function scrapeGameStats(gameStatsURL) {
  */
 async function scrapeGameSummaryReport(summaryReportURL, season="20182019") {
     // let summaryURL = `http://www.nhl.com/scores/htmlreports/${season}/GS${gameID}.HTM`
-    let htmlData = await axios(summaryReportURL).then(res => {
+    return axios(summaryReportURL).then(res => {
         l("Summary report data downloaded. Begin scraping...")
-        return res.data
+        return new ScoringSummary(res.data);
     }).catch(err => {
         l(`Error while trying to download the data: ${err}`)
     });
-    let summary = new ScoringSummary(htmlData);
-    return summary;
 }
 
-
-
-
-
-
-module.exports.getGameIDsAtDate = getGameIDsAtDate;
-module.exports.getGameIDsAtDateHTML = getGameIDsAtDateHTML;
-module.exports.ScoringSummary = ScoringSummary;
-module.exports.scrapeGameSummaryReport = scrapeGameSummaryReport;
-module.exports.removePrefixOf = removePrefixOf;
+module.exports = {
+    getGameIDsAtDate,
+    getGameIDsAtDateHTML,
+    ScoringSummary,
+    scrapeGameSummaryReport,
+    removePrefixOf,
+    getGameSummaryURL,
+    getGamePageURL
+};

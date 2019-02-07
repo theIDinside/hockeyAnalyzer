@@ -5,8 +5,20 @@ const getGameURL = (date) => {
     if(date !== String)
         date = date.toISOString().split("T")[0];
     return `https://www.nhl.com/scores/${date}`;
-}
+};
+const Int = (istr) => Number.parseInt(istr);
+const Float = (fstr) => Number.parseFloat(fstr);
 
+const removePrefixOf = (str, len) => {
+    try {
+        if(str.length < len) {
+            throw Error("Prefix length is longer than actual string");
+        }
+        return str.split("").splice(str.length-4, 4).join("");
+    } catch(err) {
+        return str;
+    }
+}
 
 module.exports = {
     anyOf: (someValue, someValueArray) => {
@@ -27,6 +39,17 @@ module.exports = {
     dateStringify: dateStringify,
     l: l,
     log: l,
-    getGameURL
-}
+    getGameURL,
+    Int,
+    Float,
+    removePrefixOf
+};
 
+const type = (obj) => {
+    let [def, name, ..._] = obj.constructor.toString();
+    if(def === "class") {
+        return name;
+    } else if(def === "function") {
+        return name;
+    }
+}

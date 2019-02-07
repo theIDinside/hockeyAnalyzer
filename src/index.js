@@ -1,7 +1,7 @@
 // THIS WILL LATER BE REMOVED. This file should later on define the startup sequence for the server. It now is a test placeholder
-const gs = require('./scrape/gameScraper');
-const st = require('./scrape/seasonTable');
-const {anyOf, daysFrom} = require('./utilities');
+const gs = require('./scrape/GameScrape');
+const st = require('./scrape/SeasonTable');
+const {anyOf, daysFrom} = require('./util/utilities');
 const l = (msg) => console.log(msg);
 const req = require('request-promise');
 let axios = require('axios');
@@ -36,7 +36,7 @@ async function getHTMLData(url) {
     l(`Begin scraping of example summary page: ${summaryURL}`);
     gs.scrapeGameSummaryReport(summaryURL).then(summary => {
         l("Summary fetchede and processed! Printing: ");
-        summary.printScoringSummary();
+        summary.print();
     }).catch(err => {
         l(err);
     })

@@ -1,6 +1,6 @@
 const C = require('cheerio')
 const phantom = require('phantom');
-const NHLTeamStatsURL = "http://www.nhl.com/stats/team?reportType=season&seasonFrom=20182019&seasonTo=20182019&gameType=2&filter=gamesPlayed,gte,1&sort=points,wins";
+const NHLTeamStatsURL = "http://www.nhl.com/stats/scoringTeam?reportType=season&seasonFrom=20182019&seasonTo=20182019&gameType=2&filter=gamesPlayed,gte,1&sort=points,wins";
 const puppeteer = require('puppeteer');
 
 function getDiffStats(team) {
@@ -29,30 +29,44 @@ function compareTeams(teamA, teamB) {
     return comparison;
 }
 
-function Team(position, name, gp, wins, loss, ties, otloss, pts, rotwins, ptspct, gf, ga, sowins, gfgame, gagame, pp, pk, sfgame, sagame, fowins) {
-    this.raw = `${position} ${name} ${gp} ${wins} ${loss} ${ties} ${otloss} ${pts} ${rotwins} ${ptspct} ${gf} ${ga} ${sowins} ${gfgame} ${gagame} ${pp} ${pk} ${sfgame} ${sagame} ${fowins}`;
-    this.position = position;
-    this.name = name;
-    this.gamesPlayed = gp;
-    this.wins = wins;
-    this.losses = loss;
-    this.ties = ties;
-    this.otlosses = otloss;
-    this.points = pts;
-    this.rotwins = rotwins;
-    this.pointsPercent = ptspct;
-    this.goalsFor = gf;
-    this.goalsAgainst = ga;
-    this.shootoutWins = sowins;
-    this.goalsForPerGame = gfgame;
-    this.goalsAgainstPerGame = gagame;
-    this.powerplay = pp;
-    this.penaltyKill = pk;
-    this.shotsForPerGame = sfgame;
-    this.shotsAgainstPerGame = sagame;
-    this.faceoffWins = fowins;
+class Team {
+    constructor(position, name, gp, wins, loss, ties, otloss, pts, rotwins, ptspct, gf, ga, sowins, gfgame, gagame, pp, pk, sfgame, sagame, fowins) {
+        this.raw = `${position} ${name} ${gp} ${wins} ${loss} ${ties} ${otloss} ${pts} ${rotwins} ${ptspct} ${gf} ${ga} ${sowins} ${gfgame} ${gagame} ${pp} ${pk} ${sfgame} ${sagame} ${fowins}`;
+        this.position = position;
+        this.name = name;
+        this.gamesPlayed = gp;
+        this.wins = wins;
+        this.losses = loss;
+        this.ties = ties;
+        this.otlosses = otloss;
+        this.points = pts;
+        this.rotwins = rotwins;
+        this.pointsPercent = ptspct;
+        this.goalsFor = gf;
+        this.goalsAgainst = ga;
+        this.shootoutWins = sowins;
+        this.goalsForPerGame = gfgame;
+        this.goalsAgainstPerGame = gagame;
+        this.powerplay = pp;
+        this.penaltyKill = pk;
+        this.shotsForPerGame = sfgame;
+        this.shotsAgainstPerGame = sagame;
+        this.faceoffWins = fowins;
+    }
 
-    this.compareTo = (otherTeam) => {
+    getName() {
+        return this.name;
+    }
+
+    getPosition() {
+        return Number.parseInt(this.position);
+    }
+
+    getPoints() {
+        return Number.parseInt(this.points);
+    }
+
+    compareTo(otherTeam) {
         let diffs = {
             teams: { teamA: this, teamB: otherTeam },
             shotsFor: Number.parseFloat(this.shotsForPerGame) - Number.parseFloat(otherTeam.shotsForPerGame),
@@ -61,15 +75,15 @@ function Team(position, name, gp, wins, loss, ties, otloss, pts, rotwins, ptspct
             goalsAgainst: Number.parseFloat(this.goalsAgainstPerGame) - Number.parseFloat(otherTeam.goalsAgainstPerGame),
             wins: Number.parseFloat(this.wins) - Number.parseFloat(otherTeam.wins),
             loss: Number.parseFloat(this.losses) - Number.parseFloat(otherTeam.losses),
-            savePct: (1 - Number.parseFloat(this.goalsAgainstPerGame) / Number.parseFloat(this.shotsAgainstPerGame)) - 
+            savePct: (1 - Number.parseFloat(this.goalsAgainstPerGame) / Number.parseFloat(this.shotsAgainstPerGame)) -
                 (1 - Number.parseFloat(otherTeam.goalsAgainstPerGame) / Number.parseFloat(otherTeam.shotsAgainstPerGame))
         };
         return diffs;
     }
-    this.getPosition = () => Number.parseInt(this.position);
-    this.getRawData = () => this.raw;
-    this.getName = () => this.name;
-    this.getPoints = () => Number.parseInt(this.points);
+
+    getRawData() {
+        return this.raw;
+    }
 }
 
 async function getTeamStandingsData() {
@@ -78,6 +92,7 @@ async function getTeamStandingsData() {
     console.log("Requesting data from www.nhl.com/stats... Please wait")
     const status = await page.goto(NHLTeamStatsURL, {waitUntil: "networkidle2"});
     const content = await page.content();
+    browser.close();
     console.log("Data retrieved... organizing data")
     let data = C.load(content)
     let seasonStandings = data('div.rt-tbody').children().map((index, elem) => {
@@ -90,7 +105,6 @@ async function getTeamStandingsData() {
         iter.splice(2, 1);
         return new Team(...iter);
     }).get();
-    browser.close();
     return seasonStandings;
 }
 
