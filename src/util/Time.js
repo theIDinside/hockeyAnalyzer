@@ -4,7 +4,7 @@ function MakeTime(timeString) {
 
 class Time {
     constructor(minutes, seconds) {
-        if (minutes instanceof "string" && seconds instanceof "string") {
+        if (Number.isNaN(Number.parseInt(minutes)) && Number.isNaN(Number.parseInt(seconds))) {
             if (minutes === "--" && seconds === "--") {
                 this.mins = 0;
                 this.secs = 0;
@@ -43,4 +43,4 @@ class Time {
 
 module.exports = {
     Time, MakeTime
-}
+};

@@ -1,8 +1,8 @@
-const C = require('cheerio')
-const {Goal} =  require("./Goal");
-const {l} = require('../util/utilities')
-const {MakeTime} = require('../util/Time')
-const {seasonStart, teams} = require('../util/constants')
+const C = require('cheerio');
+const {Goal} =  require("../data/Goal");
+const {l} = require('../util/utilities');
+const {MakeTime} = require('../util/Time');
+const {seasonStart, teams} = require('../util/constants');
 
 class ScoringSummary {
     constructor(htmlData) {
@@ -70,5 +70,5 @@ class ScoringSummary {
 }
 
 module.exports = {
-    Goal, ScoringSummary
-}
+    ScoringSummary
+};

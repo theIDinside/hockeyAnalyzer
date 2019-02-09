@@ -147,5 +147,6 @@ async function saveFirst10GamesToDB() {
 (async function() {
     let today = new Date().toISOString().split("T")[0];
     l(`Today's date: ${today}. Tomorrow: ${daysFrom(today, 1).toISOString().split("T")[0]}`);
+    await testScrapeDucksVsJets();
     await saveFirst10GamesToDB();
 })();

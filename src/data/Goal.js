@@ -1,4 +1,7 @@
-export class Goal {
+const {teams} = require("../util/constants");
+const {Time, MakeTime} = require("../util/Time");
+
+class Goal {
     constructor(goalNumber, period, time, strength, scoringTeam, goalScorer, assist1, assist2, onIceAway, onIceHome) {
         this.goalNumber = goalNumber;
         this.period = period;
@@ -32,7 +35,7 @@ export class Goal {
     }
 
     get model() {
-        let a = ["None", "None"]
+        let a = ["None", "None"];
         for (let i in this.assists) {
             a[i] = this.assists[i].split("(")[0];
         }
@@ -98,3 +101,5 @@ export class Goal {
         return teams[this.scoringTeam.toUpperCase()];
     }
 }
+
+module.exports.Goal = Goal;

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 let Schema = mongoose.Schema;
 const {TeamTotal, PlayerStat, GoalieStat} = require('../../scrape/GameStats');
 const {Goal} = require('../../scrape/ScoringSummary');
-const {Time} = require('../../util/Time')
+const {Time} = require('../../util/Time');
 // This is the full model for all game stats, provided by www.nhl.com
 
 /// Recording individual player data for every game, can later on be used for individual player trends, something that is worth
@@ -209,10 +209,6 @@ async function createGameDocument(gameId, date, aTeam, hTeam, aPlayers, hPlayers
     return new Game(game);
 }
 
-module.exports = {
-    Game, ScoringSummary, GamePlayer, createGameDocument
-};
-
 function getGameByNumber(number) {
     let it = '';
     if(number < 1000) {
@@ -232,8 +228,6 @@ function getGameByNumber(number) {
 }
 
 function getLastXGamesPlayedBy(x, team) {
-    let gamesQueryAsHome = Game.find({"teams.home": team});
-    let gamesQueryAsAway = Game.find({"teams.away": team});
     let sortDate = {datePlayed: -1};
     let query = Game.find({$or: [{"teams.home": team}, {"teams.away": team}]})
         .sort(sortDate)
@@ -241,3 +235,8 @@ function getLastXGamesPlayedBy(x, team) {
 
         });
 }
+
+module.exports = {
+    Game, ScoringSummary, GamePlayer, createGameDocument, getLastXGamesPlayedBy
+};
+

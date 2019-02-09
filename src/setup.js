@@ -2,13 +2,13 @@
     Setup file. This will scrape the entire NHL season up until today's date, and store all the data inside provided
     MongoDB. Run this once. Running this multiple times, should result in basically clearing the DB and refreshing the DB.
 */
-const {seasonStart} = require('./util/constants');
 const {getGameSummaryURL, getGameIDsAtDate, scrapeGameSummaryReport, getGamePageURL,getGameIDsAtDateHTML,ScoringSummary,removePrefixOf} = require('./scrape/GameScrape');
 const {getGameDate,scrapeShotsOnGoal,scrapePlayerTotals,GoalieStat,PlayerStat,scrapeTeamsTotals,TeamTotal} = require('./scrape/GameStats');
-const {getGameURL, l} = require('./util/utilities');
+const {getGameURL, l, seasonStart} = require('./util/utilities');
 const puppeteer = require('puppeteer');
 const {createGameDocument, Game} = require('./backend/models/GameModel');
 const mongoose = require('mongoose');
+
 function* IDRange(start, end) {
     let i = start;
     while(i < end)
@@ -19,7 +19,7 @@ const pass = process.env.NHLPASS;
 const remoteDB = `mongodb://${user}:${pass}@ds125945.mlab.com:25945/nhl`;
 
 const mongoDBHost = () => {
-    if(process.env.DEBUGDB)
+    if(process.env.DEBUGDB === "True")
         return `mongodb://localhost/nhltest`;
     else
         return remoteDB;
@@ -76,15 +76,8 @@ async function scrapeGames() {
     let gameRange = await getGameIDRange(start, end);
     let gameCenterURLPrefix = `https://www.nhl.com/gamecenter/`;
     let summarySuffix = ",game_tab=stats";
-    let mPathDefault = "mongodb://localhost/nhltest";
-    let mdb = process.env.MDB || mPathDefault;
-    mongoose.connect(mPathDefault, {useNewUrlParser: true});
-    mongoose.Promise = global.Promise;
-    let db = mongoose.connection;
-    db.once('open', () => {
-        l(`Connected to database: ${mdb}`);
-    });
-    let scrapedSuccesfully = 0;
+
+    let scrapedSuccessfully = 0;
 
     for(let gid of gameRange) {
         const func = async () => {
@@ -106,34 +99,64 @@ async function scrapeGames() {
             await Promise.all([pGameDate, pTeams, pPlayers, pScoringSummary, pShotsPeriod]).then(values => {
                 let [gameDate, [aTeam, hTeam], [aPlayers, hPlayers], scoringSummary, shotsOnGoal] = values;
                 createGameDocument(gid.toString(), gameDate, aTeam, hTeam, aPlayers, hPlayers, shotsOnGoal, scoringSummary).then(document => {
-                    document.save().then(_ => scrapedSuccesfully++);
+                    document.save().then(_ => scrapedSuccessfully++);
                 })
-            }).catch(err => {
-                l("Error occured: " + `${err}`);
-                browser.close();
-                throw new Error(`Error occured. Closing connection. Error message: ${err}`);
             });
             browser.close();
         };
         await func();
     }
+    return { games: gameRange.length, scraped: scrapedSuccessfully };
+}
+
+function SetupUI() {
+    const readline = require('readline');
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stderr
+    });
+
+    console.log("Choose action:");
+    console.log("1: Start scraping season");
+    console.log("2: Lookup last scraped game");
+    console.log("3: Repair database");
+    rl.on('line', (l) => {
+        switch (l) {
+            case "1":
+                break;
+            case "2":
+                break;
+            case "3":
+                break;
+            case "q":
+            case "Q":
+                break;
+            default:
+                console.log(`Erroneous input: ${l}`);
+        }
+    });
+}
+
+(async () => {
+
+    console.log("Setting up database.");
+    console.log(`Connecting to database... @${mongoDBHost()}`);
+    mongoose.Promise = global.Promise;
+    mongoose.connect(mongoDBHost(), {useNewUrlParser: true});
+    let db = mongoose.connection;
+
+    db.once('open', () => {
+        l(`Connected to database: ${mongoDBHost()}`);
+    });
+
+    scrapeGames().then(res => {
+        l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+    });
 
     db.once('close', () => {
         l("Disconnected from database.")
     });
-    return { games: gameRange.length, scraped: scrapedSuccesfully };
-}
-
-(async () => {
-    console.log("Setting up database.");
-    console.log(`Connecting to database... @${mongoDBHost()}`)
-    mongoose.connect(mongoDBHost());
-    let db = mongoose.connection;
-    scrapeGames().then(res => {
-        l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
-    });
-});
-
+})();
 
 
 module.exports = {
