@@ -166,16 +166,16 @@ function SetupUI() {
                 let gID = (games[0] === undefined || games[0] === null) ? 2018020001 : games[0].gameID;
                 scrapeGames(gID, null).then(res => {
                     l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+		db.close();
                 });
             } else {
                 l("Found no games: " + games.length)
                 scrapeGames(2018020001, null).then(res => {
                     l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+		db.close();
                 });
             }
         });
-
-       db.close();
     });
     db.once('close', () => {
         l("Disconnected from database.")
