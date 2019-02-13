@@ -103,7 +103,7 @@ let GameModelSchema = new Schema({
     },
     playersHome: {
         type: {
-            players: [PlayerGameModelSchema]
+            players: [PlayerGameModelSchema],
             goalies: [GoalieGameModelSchema],
         },
         validate: {
