@@ -93,11 +93,19 @@ let GameModelSchema = new Schema({
     giveAways:      { away: Number, home: Number },
     playersAway: {
         players: [PlayerGameModelSchema], // each game, will have a subdocument included for every player who participated in the game
-        goalies: [GoalieGameModelSchema]
+        goalies: [GoalieGameModelSchema],
+        validate: {
+            validator: (p) => p.length > 0,
+            message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+        }
     },
     playersHome: {
         players: [PlayerGameModelSchema],
-        goalies: [GoalieGameModelSchema]
+        goalies: [GoalieGameModelSchema],
+        validate: {
+            validator: (p) => p.length > 0,
+            message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+        }
     },
     scoringSummary: [ScoringSummarySchema]
 });
