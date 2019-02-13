@@ -34,8 +34,12 @@ teams["WPG"] = teams["JETS"] = "Winnipeg Jets";
 teams["VGK"] = teams["GOLDEN KNIGHTS"] = "Vegas Golden Knights";
 teams["FLA"] = teams["PANTHERS"] = "Florida Panthers";
 teams["NSH"] = teams["PREDATORS"] = "Nashville Predators";
+
+const getFullTeamName = (abbr) => teams[abbr.toUpperCase()];
+
 module.exports = {
     teams: teams,
     teamKeys: teamKeys,
-    seasonStart: seasonStart
+    seasonStart: seasonStart,
+    getFullTeamName: getFullTeamName
 };

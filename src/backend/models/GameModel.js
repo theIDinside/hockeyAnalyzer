@@ -71,7 +71,7 @@ ScoringSummarySchema.methods.toGoal = () => {
  * (example is URL to game between Chicago Blackhawks vs Buffalo Sabres (N.B! nhl format; Away vs Home)
  */
 let GameModelSchema = new Schema({
-    gameID:         { type: String, required: true, unique: true},
+    gameID:         { type: Number, required: true, unique: true},
     teams:          {
         type: { away: String,  home: String },
         required: true,
@@ -101,6 +101,10 @@ let GameModelSchema = new Schema({
     },
     scoringSummary: [ScoringSummarySchema]
 });
+
+GameModelSchema.methods.getGameID = () => {
+    return this.gameID;
+}
 
 GameModelSchema.post('save', (gameDoc) => {
     console.log(`Saved game ${gameDoc.gameID}, successfully to database. ${gameDoc.teams.away} vs ${gameDoc.teams.home}`)
@@ -185,7 +189,7 @@ let GamePlayer = mongoose.model("Player", PlayerGameModelSchema);
 async function createGameDocument(gameId, date, aTeam, hTeam, aPlayers, hPlayers, shotsOnGoal, scoringSummaryArray) {
     let finalResult = scoringSummaryArray.finalResult;
     let game = {
-        gameID:         gameId,
+        gameID:         Number.parseInt(gameId),
         teams:          { away: aTeam.name,  home: hTeam.name },
         datePlayed:     new Date(date),
         finalResult:    finalResult,
@@ -227,16 +231,24 @@ function getGameByNumber(number) {
     let g = Game.findBy({ 'gameID': id });
 }
 
-function getLastXGamesPlayedBy(x, team) {
-    let sortDate = {datePlayed: -1};
-    let query = Game.find({$or: [{"teams.home": team}, {"teams.away": team}]})
-        .sort(sortDate)
-        .exec((err, games) => {
+async function getLastXGamesPlayedBy(x, team) {
+    const {dateStringify} = require("../../util/utilities");
 
+    let sortDate = {datePlayed: -1};
+    Game.find({$or: [{"teams.home": team}, {"teams.away": team}]})
+        .sort(sortDate)
+        .limit(x)
+        .then((games) => {
+            if(games.length > 0) {
+                console.log(`Found: ${games.length} games with ${team} playing.`);
+                console.log(`These are the games:`)
+                for(let g of games) {
+                    console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
+                }
+            }
         });
 }
 
 module.exports = {
     Game, ScoringSummary, GamePlayer, createGameDocument, getLastXGamesPlayedBy
 };
-

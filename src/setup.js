@@ -2,11 +2,12 @@
     Setup file. This will scrape the entire NHL season up until today's date, and store all the data inside provided
     MongoDB. Run this once. Running this multiple times, should result in basically clearing the DB and refreshing the DB.
 */
-const {getGameSummaryURL, getGameIDsAtDate, scrapeGameSummaryReport, getGamePageURL,getGameIDsAtDateHTML,ScoringSummary,removePrefixOf} = require('./scrape/GameScrape');
+const {getGameSummaryURL, getGameIDsAtDate, scrapeGameSummaryReport } = require('./scrape/GameScrape');
 const {getGameDate,scrapeShotsOnGoal,scrapePlayerTotals,GoalieStat,PlayerStat,scrapeTeamsTotals,TeamTotal} = require('./scrape/GameStats');
 const {getGameURL, l, seasonStart} = require('./util/utilities');
+const {teams, getFullTeamName} = require("./util/constants")
 const puppeteer = require('puppeteer');
-const {createGameDocument, Game} = require('./backend/models/GameModel');
+const {createGameDocument, Game, getLastXGamesPlayedBy} = require('./backend/models/GameModel');
 const mongoose = require('mongoose');
 
 function* IDRange(start, end) {
@@ -19,7 +20,7 @@ const pass = process.env.NHLPASS;
 const remoteDB = `mongodb://${user}:${pass}@ds125945.mlab.com:25945/nhl`;
 
 const mongoDBHost = () => {
-    if(process.env.DEBUGDB === "True")
+    if(process.env.DEBUGDB === "ON")
         return `mongodb://localhost/nhltest`;
     else
         return remoteDB;
@@ -70,7 +71,10 @@ async function getGameIDRange(start, end) {
     })
 }
 
-async function scrapeGames() {
+async function scrapeGames(startID=null, endID=null) {
+    if(startID === null) {
+        startID = 2018020001;
+    }
     // read input from the console, or parameters, that can determine if this script is being run correctly
     let [start, end] = setupDates();
     let gameRange = await getGameIDRange(start, end);
@@ -78,6 +82,9 @@ async function scrapeGames() {
     let summarySuffix = ",game_tab=stats";
 
     let scrapedSuccessfully = 0;
+    endID = (endID === null || endID === undefined) ? gameRange[gameRange.length-1] : endID;
+
+    gameRange = gameRange.filter((val, index) => val >= startID && val <= endID);
 
     for(let gid of gameRange) {
         const func = async () => {
@@ -144,15 +151,19 @@ function SetupUI() {
     mongoose.Promise = global.Promise;
     mongoose.connect(mongoDBHost(), {useNewUrlParser: true});
     let db = mongoose.connection;
-
-    db.once('open', () => {
+    db.once('open', async () => {
         l(`Connected to database: ${mongoDBHost()}`);
+        Game.find().sort({gameID: -1}).limit(1).then(docs => {
+            let gID = 2018020001;
+            for(let d of docs) {
+                gID = (d.gameID !== undefined && d.gameID !== null) ? d.gameID : gID;
+            }
+            scrapeGames(gID, null).then(res => {
+                l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+            });
+        })
+       db.close();
     });
-
-    scrapeGames().then(res => {
-        l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
-    });
-
     db.once('close', () => {
         l("Disconnected from database.")
     });
