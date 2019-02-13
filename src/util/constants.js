@@ -29,7 +29,7 @@ teams["STL"] = teams["BLUES"] = "St. Louis Blues";
 teams["SJS"] = teams["SHARKS"] = "San Jose Sharks";
 teams["TBL"] = teams["LIGHTNING"] = "Tampa Bay Lightning";
 teams["VAN"] = teams["CANUCKS"] = "Vancouver Canucks";
-teams["TOR"] = teams["MAPLE LEAFS"] = "Toronto Maple Leafs";
+teams["TOR"] = teams["LEAFS"] = teams["MAPLE LEAFS"] = "Toronto Maple Leafs";
 teams["WPG"] = teams["JETS"] = "Winnipeg Jets";
 teams["VGK"] = teams["GOLDEN KNIGHTS"] = "Vegas Golden Knights";
 teams["FLA"] = teams["PANTHERS"] = "Florida Panthers";

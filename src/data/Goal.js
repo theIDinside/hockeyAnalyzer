@@ -10,9 +10,7 @@ class Goal {
         this.scoringTeam = scoringTeam;
         this.goalScorer = goalScorer;
         this.assists = [assist1, assist2];
-        this.playersOnIceHome = [...onIceHome.players];
-        this.playersOnIceAway = [...onIceAway.players];
-        this.rawStringData = `${goalNumber} ${period} ${time} ${this.strength} ${scoringTeam} ${goalScorer} ${assist1} ${assist2} ${this.playersOnIceAway} ${this.playersOnIceHome}`
+        this.rawStringData = `${goalNumber} ${period} ${time} ${this.strength} ${scoringTeam} ${goalScorer} ${assist1} ${assist2}`
     }
 
     translateStrength() {
@@ -23,6 +21,8 @@ class Goal {
                 return "Even Empty Net";
             case "PP":
                 return "Power Play";
+            case "EV-PS":
+                return "Even Penalty Shot";
             case "PS":
                 return "Penalty Shot";
             case "SH":
@@ -57,15 +57,10 @@ class Goal {
         else
             return Number.parseInt(this.period)
     }
-
     isGood() {
         if (this.period === "SO") // if it's a shootout goal in shootout OT, then we wont be trying to analyze the data. Therefore the goal will be no good for our purposes
             return false;
         return this.goalNumber !== "-";
-    }
-
-    printRawData() {
-        l(this.rawStringData);
     }
 
     isEmptyNet() {
@@ -82,7 +77,7 @@ class Goal {
     }
 
     prettyString() {
-        return `${this.goalNumber} \t ${this.period} \t ${this.time} \t ${this.strength} \t ${this.scoringTeam} \t ${this.goalScorer} \t ${this.assists[0]} \t ${this.assists[1]} \t ${this.playersOnIceAway} \t ${this.playersOnIceHome}`;
+        return `${this.goalNumber} \t ${this.period} \t ${this.time} \t ${this.strength} \t ${this.scoringTeam} \t ${this.goalScorer} \t ${this.assists[0]} \t ${this.assists[1]}`;
     }
 
     get number() {

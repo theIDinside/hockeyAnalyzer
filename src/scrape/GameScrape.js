@@ -2,7 +2,7 @@ const C = require('cheerio');
 const Constants = require('../util/constants');
 const puppeteer = require('puppeteer');
 let axios = require('axios');
-const {anyOf, daysFrom, dateStringify, getFullTeamName, l, Int, Float, removePrefixOf, dateString} = require('../util/utilities');
+const {dumpErrorStackTrace, anyOf, daysFrom, dateStringify, getFullTeamName, l, Int, Float, removePrefixOf, dateString} = require('../util/utilities');
 const {Goal, ScoringSummary} = require('./ScoringSummary');
 const {Time, MakeTime} = require('../util/Time');
 
@@ -62,6 +62,7 @@ async function scrapeGameSummaryReport(summaryReportURL, season="20182019") {
         return new ScoringSummary(res.data);
     }).catch(err => {
         l(`Error while trying to download the data: ${err}`)
+        dumpErrorStackTrace(err);
     });
 }
 

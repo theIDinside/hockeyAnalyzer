@@ -46,7 +46,7 @@ let ScoringSummarySchema = new Schema({
     strength: {
         type: String,
         required: true,
-        enum: ['Even', 'Penalty Shot', 'Even Empty Net', 'Power Play', 'Short Handed', 'Short Handed Empty Net', "Power Play Empty Net"]
+        enum: ['Even', 'Even Penalty Shot', 'Penalty Shot', 'Even Empty Net', 'Power Play', 'Short Handed', 'Short Handed Empty Net', "Power Play Empty Net"]
     },
     scoringTeam: String,
     goalScorer: String,
@@ -92,23 +92,35 @@ let GameModelSchema = new Schema({
     blockedShots:   { away: Number, home: Number },
     giveAways:      { away: Number, home: Number },
     playersAway: {
-        type: {
-            players: [PlayerGameModelSchema], // each game, will have a subdocument included for every player who participated in the game
-            goalies: [GoalieGameModelSchema],
-        },
-        validate: {
-            validator: (p) => p.length > 0,
-            message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
-        }
+            players: {
+                type: [PlayerGameModelSchema],
+                validate: {
+                    validator: (p) => p.length > 0,
+                    message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+                }
+            }, // each game, will have a subdocument included for every player who participated in the game
+            goalies: {
+                type: [GoalieGameModelSchema],
+                validate: {
+                    validator: (p) => p.length > 0,
+                    message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+                }
+            }
     },
     playersHome: {
-        type: {
-            players: [PlayerGameModelSchema],
-            goalies: [GoalieGameModelSchema],
-        },
-        validate: {
-            validator: (p) => p.length > 0,
-            message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+        players: {
+            type: [PlayerGameModelSchema],
+            validate: {
+                validator: (p) => p.length > 0,
+                message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+            }
+        }, // each game, will have a subdocument included for every player who participated in the game
+        goalies: {
+            type: [GoalieGameModelSchema],
+            validate: {
+                validator: (p) => p.length > 0,
+                message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+            }
         }
     },
     scoringSummary: [ScoringSummarySchema]

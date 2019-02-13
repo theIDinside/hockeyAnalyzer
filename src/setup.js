@@ -5,7 +5,7 @@
 const {getGameSummaryURL, getGameIDsAtDate, scrapeGameSummaryReport } = require('./scrape/GameScrape');
 const {getGameDate,scrapeShotsOnGoal,scrapePlayerTotals,GoalieStat,PlayerStat,scrapeTeamsTotals,TeamTotal} = require('./scrape/GameStats');
 const {getGameURL, l, seasonStart} = require('./util/utilities');
-const {teams, getFullTeamName} = require("./util/constants")
+const {teams, getFullTeamName, dumpErrorStackTrace} = require("./util/constants")
 const puppeteer = require('puppeteer');
 const {createGameDocument, Game, getLastXGamesPlayedBy} = require('./backend/models/GameModel');
 const mongoose = require('mongoose');
@@ -27,8 +27,7 @@ const mongoDBHost = () => {
 };
 
 
-/**
- * Returns dates for start of the season, and today's date.
+/** * Returns dates for start of the season, and today's date.
  * @returns {Date[]}
  */
 function setupDates() {
@@ -108,6 +107,14 @@ async function scrapeGames(startID=null, endID=null) {
                 createGameDocument(gid.toString(), gameDate, aTeam, hTeam, aPlayers, hPlayers, shotsOnGoal, scoringSummary).then(document => {
                     document.save().then(_ => scrapedSuccessfully++);
                 })
+            }).catch(err => {
+                let logdata = dumpErrorStackTrace(err);
+                require("fs").writeFile("./error.log", logdata, err => {
+                    if(err) {
+                        throw err;
+                    }
+                    console.log("Saved log data to error.log");
+                });
             });
             browser.close();
         };
@@ -145,7 +152,6 @@ function SetupUI() {
 }
 
 (async () => {
-
     console.log("Setting up database.");
     console.log(`Connecting to database... @${mongoDBHost()}`);
     mongoose.Promise = global.Promise;
@@ -153,15 +159,22 @@ function SetupUI() {
     let db = mongoose.connection;
     db.once('open', async () => {
         l(`Connected to database: ${mongoDBHost()}`);
-        Game.find().sort({gameID: -1}).limit(1).then(docs => {
-            let gID = 2018020001;
-            for(let d of docs) {
-                gID = (d.gameID !== undefined && d.gameID !== null) ? d.gameID : gID;
+        await Game.find({}).sort({gameID: -1}).limit(1).exec((err, games) => {
+            if(games.length > 0){
+                l(`Found ${games.length} games`);
+                l(`Start scraping at ${games[0].gameID}`);
+                let gID = (games[0] === undefined || games[0] === null) ? 2018020001 : games[0].gameID;
+                scrapeGames(gID, null).then(res => {
+                    l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+                });
+            } else {
+                l("Found no games: " + games.length)
+                scrapeGames(2018020001, null).then(res => {
+                    l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+                });
             }
-            scrapeGames(gID, null).then(res => {
-                l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
-            });
-        })
+        });
+
        db.close();
     });
     db.once('close', () => {
