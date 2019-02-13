@@ -1,8 +1,12 @@
 const mongoose = require('mongoose');
 let Schema = mongoose.Schema;
 
+
+/**
+ * This is the schema for the individual player stats, not the stats that can be scraped from the game summaries.
+ */
 let PlayerModelSchema = new Schema({
-    team:               String,
+    scoringTeam:               String,
     jersey:             Number,
     name:               String,
     age:                Number,
@@ -12,7 +16,7 @@ let PlayerModelSchema = new Schema({
     assists:            Number,
     points:             Number, 
     difference:         Number,         // the +/- statistics 
-    penaltyMinutes:     Number,         // full PIM are calculated. So if a goal is scored against during pk, the full PK period is still counted here.
+    penaltyMinutes:     Number,         // full pim are calculated. So if a goal is scored against during pk, the full PK period is still counted here.
     powerPlayGoals:     Number,
     powerPlayPoints:    Number,
     shortHandedGoals:   Number,

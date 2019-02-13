@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "Running setup..."
+source .rc
+echo "NHL Database info, user:password - $NHL:$NHLPASS"
+/usr/bin/node ./src/setup.js
+

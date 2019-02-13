@@ -4,11 +4,15 @@
   "description": "",
   "main": "./src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node ./src/test.js",
+    "testdb": "node ./src/testSetup.js",
+    "run":  "node ./src/index.js",
+    "setup": "node ./src/setup.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.18.0",
     "body-parser": "^1.18.3",
     "cheerio": "^1.0.0-rc.2",
     "cookie-parser": "^1.4.3",
@@ -17,6 +21,7 @@
     "mongoose": "^5.4.7",
     "node-horseman": "^3.3.0",
     "phantom": "^6.0.3",
+    "puppeteer": "^1.12.0",
     "request": "^2.88.0",
     "request-promise": "^4.2.2"
   }
