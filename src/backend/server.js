@@ -9,7 +9,7 @@ const {dumpErrorStackTrace} = require("../util/utilities");
 const mongoose = require('mongoose');
 const fs = require("fs");
 const Standings = require('./models/StandingsModel');
-const Game = require('./models/GameModel');
+const {getLastXGamesPlayedBy} = require('./models/GameModel');
 const Player = require('./models/PlayerModel');
 const {getFullTeamName} = require("../util/constants");
 
@@ -74,5 +74,58 @@ server.route({
 
     }
 });
+
+let BetRoute = {
+   method: "GET",
+   path: "/gameID",
+   handler: (request, h) => {
+       let gameID = encodeURIComponent(request.params.gameID);
+   }
+};
+
+let GamesTodayRoute = {
+    method: "GET",
+    path: "/games/today",
+    handler: (request, h) => {
+        // TODO: this function is not yet defined.
+        let gamesToday = getGamesToday(new Date());
+    }
+};
+
+
+// Possible (example) implementation of requesting trend data.
+let AnalyzeComingGameRoute = {
+    method: "GET",
+    path: "/games/{ID}",
+    handler: (request, h) => {
+        // TODO: this function is not yet defined.
+        let gameID = encodeURIComponent(request.params.ID);
+
+        /*
+            TODO: this function is not yet defined. Should return object like
+                {
+                    home: "Some Team A"
+                    away: "Some Team B",
+                }
+         */
+        let gameData = reqGameData(gameID);
+
+        let last10GamesHomeTeam = getLastXGamesPlayedBy(10, gameData.home, (games) => {
+            return games;
+        });
+        let last10GamesAwayTeam = getLastXGamesPlayedBy(10, gameData.away, (games) => {
+            return games;
+        });
+
+        Promise.all([last10GamesHomeTeam, last10GamesAwayTeam]).then(values => {
+            let [htGames, atGames] = values;
+
+        })
+    }
+};
+
+server.route(BetRoute);
+server.route(GamesTodayRoute);
+server.route(AnalyzeComingGameRoute);
 
 init();

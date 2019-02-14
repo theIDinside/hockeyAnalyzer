@@ -270,7 +270,7 @@ function getGameByNumber(number) {
 async function getLastXGamesPlayedBy(x, team, analyzeCallback) {
     const {dateStringify} = require("../../util/utilities");
     let sortDate = {datePlayed: -1};
-    Game.find({$or: [{"teams.home": team}, {"teams.away": team}]})
+    return Game.find({$or: [{"teams.home": team}, {"teams.away": team}]})
         .sort(sortDate)
         .limit(x)
         .then((games) => {
