@@ -79,10 +79,6 @@ let GameModelSchema = new Schema({
     teamWon: {
         type:  String,
         required: true,
-        validate: {
-            validator: (team) => (team === this.teams.home || team === this.teams.away),
-            message: m => `Provided winning team isn't even playing in this game. Provided winner: ${m.value}`
-        }
     },
     datePlayed:     { type: Date, required: true },
     finalResult:    { type: { away: Number, home: Number }, required: true  },
@@ -136,7 +132,7 @@ let GameModelSchema = new Schema({
 
 GameModelSchema.methods.getGameID = () => {
     return this.gameID;
-}
+};
 
 GameModelSchema.post('save', (gameDoc) => {
     console.log(`Saved game ${gameDoc.gameID}, successfully to database. ${gameDoc.teams.away} vs ${gameDoc.teams.home}`)
