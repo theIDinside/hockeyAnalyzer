@@ -76,6 +76,14 @@ let GameModelSchema = new Schema({
         type: { away: String,  home: String },
         required: true,
     },
+    teamWon: {
+        type:  String,
+        required: true,
+        validate: {
+            validator: (team) => (team === teams.home || team === teams.away),
+            message: m => `Provided winning team isn't even playing in this game. Provided winner: ${m.value}`
+        }
+    },
     datePlayed:     { type: Date, required: true },
     finalResult:    { type: { away: Number, home: Number }, required: true  },
     shotsOnGoal:    {
@@ -217,6 +225,7 @@ async function createGameDocument(gameId, date, aTeam, hTeam, aPlayers, hPlayers
         teams:          { away: aTeam.name,  home: hTeam.name },
         datePlayed:     new Date(date),
         finalResult:    finalResult,
+        teamWon: (this.finalResult.home > this.finalResult.away ? this.teams.home : this.teams.away),
         shotsOnGoal:    shotsOnGoal,
         faceOffWins:    { away: aTeam.faceoffWins, home: hTeam.faceoffWins },
         powerPlay:      { away: { goals: aTeam.ppGoals, total: aTeam.ppAttempts }, home: { goals: hTeam.ppGoals, totals: hTeam.ppAttempts } },
@@ -255,9 +264,15 @@ function getGameByNumber(number) {
     let g = Game.findBy({ 'gameID': id });
 }
 
-async function getLastXGamesPlayedBy(x, team) {
+/**
+ *
+ * @param x
+ * @param team
+ * @param analyzeCallback {function} - the type of analytical operation to be performed on the last x games.
+ * @return {Promise<void>}
+ */
+async function getLastXGamesPlayedBy(x, team, analyzeCallback) {
     const {dateStringify} = require("../../util/utilities");
-
     let sortDate = {datePlayed: -1};
     Game.find({$or: [{"teams.home": team}, {"teams.away": team}]})
         .sort(sortDate)
@@ -269,6 +284,32 @@ async function getLastXGamesPlayedBy(x, team) {
                 for(let g of games) {
                     console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
                 }
+                return analyzeCallback(games);
+            }
+        });
+}
+
+/**
+ *
+ * @param x
+ * @param team
+ * @param analyzeCallback {function} - the type of analytical operation to be performed on the last x games.
+ * @return {Promise<void>}
+ */
+async function getLastXGamesWonBy(x, team, analyzeCallback) {
+    const {dateStringify} = require("../../util/utilities");
+    let sortDate = {datePlayed: -1};
+    Game.find({$or: [{"teams.home": team}, {"teams.away": team}], $and: []})
+        .sort(sortDate)
+        .limit(x)
+        .then((games) => {
+            if(games.length > 0) {
+                console.log(`Found: ${games.length} games with ${team} playing.`);
+                console.log(`These are the games:`)
+                for(let g of games) {
+                    console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
+                }
+                return analyzeCallback(games);
             }
         });
 }
