@@ -71,7 +71,13 @@ function TotalGoalsAvg(games) {
 
 
 class Trend {
-    constructor(team, games, betType, lambda) {
+    /**
+     *
+     * @param team {String}
+     * @param games {GameData[]}
+     * @param lambda {Function}
+     */
+    constructor(team, games, lambda) {
         this.team = team;
         this.games = games;
         this.lambda = lambda;
@@ -138,3 +144,32 @@ class ThirdPeriodWin extends Trend {
     }
 }
 
+class EmptyNetGoalGames extends Trend {
+    constructor(team, games) {
+        super(team, games, (game) => game.scoringSummary.filter((goal) => goal.period === 3 && goal.strength === "SH-EN" || goal.strength === "EV-EN").length)
+    }
+
+    get result() {
+        return {
+            games: this.games.length,
+            goalsMade: this.games.map((game) => { this.lambda(game) }),
+            cameTrue: this.games.map((game) => this.lambda(game) > 0)
+        }
+    }
+}
+
+class GamesOver extends Trend {
+    constructor(team, games, totalScoredGoals) {
+        super(team, games, (game) => {
+            // calculate last games.length games, the average goals for and against
+        })
+    }
+
+    get result() {
+        return {
+            games: this.games.length,
+            goalsGame: this.games.map(game => game.scoringSummary.length),
+            goalAverageTotal: this.games.reduce((res, game) => res + game.scoringSummary.length) / this.games.length,
+        }
+    }
+}

@@ -43,6 +43,7 @@ function dumpErrorStackTrace(err) {
     if(err) {
         console.log(`\nError Message: ${err.message}`);
         console.log(`Stack: ${err.stack}`)
+        return`Error message: ${err.message}\n Stack: ${err.stack}`;
     }
 }
 
@@ -69,6 +70,7 @@ module.exports = {
     Int,
     Float,
     removePrefixOf,
-    dateString
+    dateString,
+    dumpErrorStackTrace
 };
 

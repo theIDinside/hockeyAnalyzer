@@ -3,3 +3,7 @@ package-lock.json
 .rc
 src/backend/api.key
 .idea/
+loginToDb.sh
+api.key
+
+test\.js

@@ -46,7 +46,7 @@ let ScoringSummarySchema = new Schema({
     strength: {
         type: String,
         required: true,
-        enum: ['Even', 'Penalty Shot', 'Even Empty Net', 'Power Play', 'Short Handed', 'Short Handed Empty Net', "Power Play Empty Net"]
+        enum: ['Even', 'Even Penalty Shot', 'Penalty Shot', 'Even Empty Net', 'Power Play', 'Short Handed', 'Short Handed Empty Net', "Power Play Empty Net"]
     },
     scoringTeam: String,
     goalScorer: String,
@@ -76,6 +76,10 @@ let GameModelSchema = new Schema({
         type: { away: String,  home: String },
         required: true,
     },
+    teamWon: {
+        type:  String,
+        required: true,
+    },
     datePlayed:     { type: Date, required: true },
     finalResult:    { type: { away: Number, home: Number }, required: true  },
     shotsOnGoal:    {
@@ -92,19 +96,43 @@ let GameModelSchema = new Schema({
     blockedShots:   { away: Number, home: Number },
     giveAways:      { away: Number, home: Number },
     playersAway: {
-        players: [PlayerGameModelSchema], // each game, will have a subdocument included for every player who participated in the game
-        goalies: [GoalieGameModelSchema]
+            players: {
+                type: [PlayerGameModelSchema],
+                validate: {
+                    validator: (p) => p.length > 0,
+                    message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+                }
+            }, // each game, will have a subdocument included for every player who participated in the game
+            goalies: {
+                type: [GoalieGameModelSchema],
+                validate: {
+                    validator: (p) => p.length > 0,
+                    message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+                }
+            }
     },
     playersHome: {
-        players: [PlayerGameModelSchema],
-        goalies: [GoalieGameModelSchema]
+        players: {
+            type: [PlayerGameModelSchema],
+            validate: {
+                validator: (p) => p.length > 0,
+                message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+            }
+        }, // each game, will have a subdocument included for every player who participated in the game
+        goalies: {
+            type: [GoalieGameModelSchema],
+            validate: {
+                validator: (p) => p.length > 0,
+                message: props => `You must provide stats for the players and goalies. You provided ${props.value.length} players`
+            }
+        }
     },
     scoringSummary: [ScoringSummarySchema]
 });
 
 GameModelSchema.methods.getGameID = () => {
     return this.gameID;
-}
+};
 
 GameModelSchema.post('save', (gameDoc) => {
     console.log(`Saved game ${gameDoc.gameID}, successfully to database. ${gameDoc.teams.away} vs ${gameDoc.teams.home}`)
@@ -193,6 +221,7 @@ async function createGameDocument(gameId, date, aTeam, hTeam, aPlayers, hPlayers
         teams:          { away: aTeam.name,  home: hTeam.name },
         datePlayed:     new Date(date),
         finalResult:    finalResult,
+        teamWon: (finalResult.home > finalResult.away ? hTeam.name : aTeam.name),
         shotsOnGoal:    shotsOnGoal,
         faceOffWins:    { away: aTeam.faceoffWins, home: hTeam.faceoffWins },
         powerPlay:      { away: { goals: aTeam.ppGoals, total: aTeam.ppAttempts }, home: { goals: hTeam.ppGoals, totals: hTeam.ppAttempts } },
@@ -231,9 +260,15 @@ function getGameByNumber(number) {
     let g = Game.findBy({ 'gameID': id });
 }
 
-async function getLastXGamesPlayedBy(x, team) {
+/**
+ *
+ * @param x
+ * @param team
+ * @param analyzeCallback {function} - the type of analytical operation to be performed on the last x games.
+ * @return {Promise<void>}
+ */
+async function getLastXGamesPlayedBy(x, team, analyzeCallback) {
     const {dateStringify} = require("../../util/utilities");
-
     let sortDate = {datePlayed: -1};
     Game.find({$or: [{"teams.home": team}, {"teams.away": team}]})
         .sort(sortDate)
@@ -245,6 +280,32 @@ async function getLastXGamesPlayedBy(x, team) {
                 for(let g of games) {
                     console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
                 }
+                return analyzeCallback(games);
+            }
+        });
+}
+
+/**
+ *
+ * @param x
+ * @param team
+ * @param analyzeCallback {function} - the type of analytical operation to be performed on the last x games.
+ * @return {Promise<void>}
+ */
+async function getLastXGamesWonBy(x, team, analyzeCallback) {
+    const {dateStringify} = require("../../util/utilities");
+    let sortDate = {datePlayed: -1};
+    Game.find({$or: [{"teams.home": team}, {"teams.away": team}], $and: []})
+        .sort(sortDate)
+        .limit(x)
+        .then((games) => {
+            if(games.length > 0) {
+                console.log(`Found: ${games.length} games with ${team} playing.`);
+                console.log(`These are the games:`)
+                for(let g of games) {
+                    console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
+                }
+                return analyzeCallback(games);
             }
         });
 }

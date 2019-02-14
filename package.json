@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node ./src/test.js",
     "testdb": "node ./src/testSetup.js",
-    "run":  "node ./src/index.js",
+    "run": "node ./src/index.js",
     "setup": "node ./src/setup.js"
   },
   "author": "",
@@ -17,6 +17,7 @@
     "cheerio": "^1.0.0-rc.2",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.4",
+    "hapi": "^18.1.0",
     "lodash": "^4.17.11",
     "mongoose": "^5.4.7",
     "node-horseman": "^3.3.0",

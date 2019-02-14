@@ -2,7 +2,8 @@ const C = require('cheerio');
 const {Goal} =  require("../data/Goal");
 const {l} = require('../util/utilities');
 const {MakeTime} = require('../util/Time');
-const {seasonStart, teams} = require('../util/constants');
+const {seasonStart, teams, getFullTeamName} = require('../util/constants');
+
 
 class ScoringSummary {
     constructor(htmlData) {
@@ -12,30 +13,24 @@ class ScoringSummary {
             txt = txt.split("Game")[0];
             let tmp = txt.split(" ");
             txt = tmp[tmp.length-1];
-            return teams[txt];
+            return getFullTeamName(txt);
         })[0];
         this.home = elQuery('table#Home').children().children().filter((i, _) => i > 1).children().map((idx, e) => {
             let txt = elQuery(e).text();
             txt = txt.split("Game")[0];
             let tmp = txt.split(" ");
             txt = tmp[tmp.length-1];
-            return teams[txt];
+            return getFullTeamName(txt);
         })[0];
         this.summary = elQuery('tbody').children().filter((i, e) => i === 3).map((index, row) =>
             elQuery(row).children().children().children().children().filter((index, elem) => index > 0).map((rowNumber, rowScoreData) =>
                 // iterate through the td's
-                new Goal(...elQuery(rowScoreData).children().map((idx, td) => {
-                    if ((idx === 6 && elQuery(td).text() === "unassisted")) {
+                new Goal(...elQuery(rowScoreData).children().filter((i, e) => i < 8).map((idx, td) => {
+                    if (idx === 6 && (elQuery(td).text() === "unassisted" || elQuery(td).text() === "Unsuccessful Penalty Shot" || elQuery(td).text() === "Successful Penalty Shot")) {
                         // if there are no primary and secondary assists
                         return "None";
-                    } else if ((idx === 7) && (elQuery(td).prev().text() === "unassisted" || elQuery(td).text().trim().length === 0)) {
+                    } else if ((idx === 7) && (elQuery(td).prev().text() === "unassisted" || elQuery(td).text().trim().length === 0 || elQuery(td).prev().text() === "Unsuccessful Penalty Shot" || elQuery(td).prev().text() === "Successful Penalty Shot")) {
                         return "None";
-                    } else if ((idx === 7) && elQuery(td).prev().attr("colspan") === 2) {
-                        l(((idx === 7) && elQuery(td).prev().attr("colspan") === "2"));
-                        return elQuery(td).text().trim().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
-                    } else if (idx > 7) {
-                        let pOnIce = elQuery(td).text().trim().split(",").map(e => e.trim()).map(e => Number.parseInt(e));
-                        return {players: pOnIce};
                     } else {
                         return elQuery(td).text();
                     }
