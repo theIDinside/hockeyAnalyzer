@@ -80,7 +80,7 @@ let GameModelSchema = new Schema({
         type:  String,
         required: true,
         validate: {
-            validator: (team) => (team === teams.home || team === teams.away),
+            validator: (team) => (team === this.teams.home || team === this.teams.away),
             message: m => `Provided winning team isn't even playing in this game. Provided winner: ${m.value}`
         }
     },
