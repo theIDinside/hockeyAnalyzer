@@ -4,6 +4,7 @@ const {l} = require('../util/utilities');
 const {MakeTime} = require('../util/Time');
 const {seasonStart, teams, getFullTeamName} = require('../util/constants');
 
+
 class ScoringSummary {
     constructor(htmlData) {
         let elQuery = C.load(htmlData);

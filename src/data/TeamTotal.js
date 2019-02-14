@@ -27,7 +27,6 @@ class TeamTotal {
     }
 
     get name() {
-        console.log(`This team name, short or full: |${this.teamname}|`);
         return teams[this.teamname.toUpperCase()];
     }
 
