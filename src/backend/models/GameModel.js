@@ -225,7 +225,7 @@ async function createGameDocument(gameId, date, aTeam, hTeam, aPlayers, hPlayers
         teams:          { away: aTeam.name,  home: hTeam.name },
         datePlayed:     new Date(date),
         finalResult:    finalResult,
-        teamWon: (this.finalResult.home > this.finalResult.away ? hTeam.name : aTeam.name),
+        teamWon: (finalResult.home > this.finalResult.away ? hTeam.name : aTeam.name),
         shotsOnGoal:    shotsOnGoal,
         faceOffWins:    { away: aTeam.faceoffWins, home: hTeam.faceoffWins },
         powerPlay:      { away: { goals: aTeam.ppGoals, total: aTeam.ppAttempts }, home: { goals: hTeam.ppGoals, totals: hTeam.ppAttempts } },
