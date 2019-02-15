@@ -5,9 +5,10 @@
 const {getGameSummaryURL, getGameIDsAtDate, scrapeGameSummaryReport } = require('./scrape/GameScrape');
 const {getGameDate,scrapeShotsOnGoal,scrapePlayerTotals,GoalieStat,PlayerStat,scrapeTeamsTotals,TeamTotal} = require('./scrape/GameStats');
 const {getGameURL, l, seasonStart} = require('./util/utilities');
-const {teams, getFullTeamName, dumpErrorStackTrace} = require("./util/constants")
+const {teams, getFullTeamName, dumpErrorStackTrace} = require("./util/constants");
 const puppeteer = require('puppeteer');
 const {createGameDocument, Game, getLastXGamesPlayedBy} = require('./backend/models/GameModel');
+const GameInfo = require("./backend/models/GameInfoModel");
 const mongoose = require('mongoose');
 
 function* IDRange(start, end) {
@@ -46,7 +47,7 @@ async function getGameIDRange(start, end) {
         let res1 = values[0];
         let res2 = values[1];
         let rangeBegin = 2018020001; // regular season's first game.
-        let rangeEnd = Number.parseInt(res2[0]);
+        let rangeEnd = Number.parseInt(res2[0]); // this is a range of [res1, res2). so res1 <= x < res2
         for(let idx of res1) {
             let t = idx.toString();
             if(t[5] !== "2") {
@@ -151,35 +152,100 @@ function SetupUI() {
     });
 }
 
+// NB: Run once
+async function scrapeGameInfo() {
+    // scrape ALL upcoming games, so that a gameID can be searched for quickly getting teams playing in that game.
+    // that way, we wont have to scrape an upcoming game's page, every time we do a search or something, because that
+    // data will be stored in the GameInfo collection.
+
+    GameInfo.find({}).sort({gameID: -1}).exec(async (err, gInfoDocs) => {
+        if(gInfoDocs.length > 0) {
+            let lastGameInfoDoc = gInfoDocs[0];
+            if (lastGameInfoDoc.gameID === 2018021271 && gInfoDocs.length === (2018021271 - 2018020000)) {
+                console.log("All game info documents have been scraped and saved. No need to continue.")
+            } else {
+                let gameIDs = Array.from(IDRange(2018020001, (2018021271) + 1));
+                const gameCenterURL = (id) => `https://www.nhl.com/gamecenter/${id}`;
+                let browser = await puppeteer.launch();
+                    for(let id of gameIDs) {
+                        let page = await browser.newPage();
+                        await page.goto(gameCenterURL(id));
+                        let url = await page.url();
+                        let [teams, year, month, day] = url.split("gamecenter/")[1].split("/");
+                        let [a, h] = teams.split("-vs-");
+                        let away = getFullTeamName(a);
+                        let home = getFullTeamName(h);
+                        let date = new Date(`${year}-${month}-${day}`);
+                        let gameInfo = new GameInfo({
+                            gameID: id,
+                            teams: {
+                                away: away,
+                                home: home,
+                            },
+                            datePlayed: date
+                        });
+                        gameInfo.save();
+                        await page.close();
+                    }
+            }
+        } else {
+            let gameIDs = Array.from(IDRange(2018020001, (2018021271) + 1));
+            const gameCenterURL = (id) => `https://www.nhl.com/gamecenter/${id}`;
+            let browser = await puppeteer.launch();
+                for(let id of gameIDs) {
+                    let page = await browser.newPage();
+                    await page.goto(gameCenterURL(id));
+                    let url = await page.url();
+                    let [teams, year, month, day] = url.split("gamecenter/")[1].split("/");
+                    let [a, h] = teams.split("-vs-");
+                    let away = getFullTeamName(a);
+                    let home = getFullTeamName(h);
+                    let date = new Date(`${year}-${month}-${day}`);
+                    let gameInfo = new GameInfo({
+                        gameID: id,
+                        teams: {
+                            away: away,
+                            home: home,
+                        },
+                        datePlayed: date
+                    });
+                    gameInfo.save();
+                    await page.close();
+                }
+        }
+    })
+}
+
 (async () => {
     console.log("Setting up database.");
     console.log(`Connecting to database... @${mongoDBHost()}`);
     mongoose.Promise = global.Promise;
     mongoose.connect(mongoDBHost(), {useNewUrlParser: true});
     let db = mongoose.connection;
-    db.once('open', async () => {
-        l(`Connected to database: ${mongoDBHost()}`);
-        await Game.find({}).sort({gameID: -1}).limit(1).exec((err, games) => {
-            if(games.length > 0){
-                l(`Found ${games.length} games`);
-                l(`Start scraping at ${games[0].gameID}`);
-                let gID = (games[0] === undefined || games[0] === null) ? 2018020001 : games[0].gameID;
-                scrapeGames(gID, null).then(res => {
-                    l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
-		db.close();
-                });
-            } else {
-                l("Found no games: " + games.length)
-                scrapeGames(2018020001, null).then(res => {
-                    l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
-		db.close();
-                });
-            }
-        });
-    });
-    db.once('close', () => {
+    db.on('close', () => {
         l("Disconnected from database.")
     });
+    db.once('open', async () => {
+        l(`Connected to database: ${mongoDBHost()}`);
+        await scrapeGameInfo().then(async _ => {
+            await Game.find({}).sort({gameID: -1}).limit(1).exec((err, games) => {
+                if(games.length > 0){
+                    l(`Found ${games.length} games`);
+                    l(`Start scraping at ${games[0].gameID}`);
+                    let gID = (games[0] === undefined || games[0] === null) ? 2018020001 : games[0].gameID;
+                    scrapeGames(gID, null).then(res => {
+                        l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+                    });
+                } else {
+                    l("Found no games: " + games.length);
+                    scrapeGames(2018020001, null).then(res => {
+                        l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+                    });
+                }
+            });
+        });
+    });
+
 })();
 
 
