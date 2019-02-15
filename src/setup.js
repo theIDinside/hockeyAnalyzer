@@ -152,17 +152,33 @@ function SetupUI() {
     });
 }
 
+function createGameInfoObject(urlString, id) {
+    let [teams, year, month, day] = urlString.split("gamecenter/")[1].split("/");
+    let [a, h] = teams.split("-vs-");
+    let away = getFullTeamName(a);
+    let home = getFullTeamName(h);
+    let date = new Date(`${year}-${month}-${day}`);
+    return {
+        gameID: id,
+        teams: {
+            away: away,
+            home: home,
+        },
+        datePlayed: date
+    };
+}
+
 // NB: Run once
 /**
  * Updated. Pretty cool. At least now, we scrape 10 pages / game id and game info in "parallell". Increases the speed quite dramatically.
  * @return {Promise<void>}
  */
-async function scrapeGameInfo(browser) {
+async function scrapeGameInfo() {
     // scrape ALL upcoming games, so that a gameID can be searched for quickly getting teams playing in that game.
     // that way, we wont have to scrape an upcoming game's page, every time we do a search or something, because that
     // data will be stored in the GameInfo collection.
     const gameCenterURL = (id) => `https://www.nhl.com/gamecenter/${id}`;
-
+    let browser = await puppeteer.launch();
     GameInfo.find({}).sort({gameID: -1}).exec(async (err, gInfoDocs) => {
         if(gInfoDocs.length > 0) {
             let lastGameInfoDoc = gInfoDocs[0];
@@ -174,7 +190,7 @@ async function scrapeGameInfo(browser) {
                 // let gameIDs = Array.from(IDRange(lastGameInfoDoc.gameID + 1, lastGameInfoDoc.gameID + 30));
                 for (let id = gameIDs[0]; id < gameIDs[gameIDs.length - 1]; id += 10) {
                     let pageNums = Array.from(IDRange(id, id + 10)).map(async gID => {
-                        console.log(`Navigating to page of game id ${gID}`)
+                        /// console.log(`Navigating to page of game id ${gID}`)
                         let page = await browser.newPage();
                         await page.goto(gameCenterURL(gID));
                         return { page: page, GameID: gID };
@@ -184,20 +200,9 @@ async function scrapeGameInfo(browser) {
                             let page = payload.page;
                             let id = payload.GameID;
                             let url = await page.url();
-                            console.log(`Trying to scrape game info at: ${url}`)
-                            let [teams, year, month, day] = url.split("gamecenter/")[1].split("/");
-                            let [a, h] = teams.split("-vs-");
-                            let away = getFullTeamName(a);
-                            let home = getFullTeamName(h);
-                            let date = new Date(`${year}-${month}-${day}`);
-                            let gameInfo = new GameInfo({
-                                gameID: id,
-                                teams: {
-                                    away: away,
-                                    home: home,
-                                },
-                                datePlayed: date
-                            });
+                            // console.log(`Trying to scrape game info at: ${url}`)
+                            let gameInfoDocData = createGameInfoObject(url, id);
+                            let gameInfo = new GameInfo(gameInfoDocData);
                             gameInfo.save();
                             await page.close();
                         })
@@ -217,26 +222,16 @@ async function scrapeGameInfo(browser) {
                         let page = payload.page;
                         let id = payload.GameID;
                         let url = await page.url();
-                        let [teams, year, month, day] = url.split("gamecenter/")[1].split("/");
-                        let [a, h] = teams.split("-vs-");
-                        let away = getFullTeamName(a);
-                        let home = getFullTeamName(h);
-                        let date = new Date(`${year}-${month}-${day}`);
-                        let gameInfo = new GameInfo({
-                            gameID: id,
-                            teams: {
-                                away: away,
-                                home: home,
-                            },
-                            datePlayed: date
-                        });
+                        let gameInfoDocData = createGameInfoObject(url, id);
+                        let gameInfo = new GameInfo(gameInfoDocData);
                         gameInfo.save();
                         await page.close();
                     })
                 })
             }
         }
-    })
+        await browser.close();
+    });
 }
 
 (async () => {
@@ -250,8 +245,7 @@ async function scrapeGameInfo(browser) {
     });
     db.once('open', async () => {
         l(`Connected to database: ${mongoDBHost()}`);
-        let browser = await puppeteer.launch();
-        await scrapeGameInfo(browser).then(async _ => {
+        await scrapeGameInfo().then(async _ => {
             await Game.find({}).sort({gameID: -1}).limit(1).exec((err, games) => {
                 if(games.length > 0){
                     l(`Found ${games.length} games`);
@@ -267,7 +261,6 @@ async function scrapeGameInfo(browser) {
                     });
                 }
             });
-            browser.close();
         });
     });
 
