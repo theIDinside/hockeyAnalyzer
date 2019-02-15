@@ -2,6 +2,9 @@ function MakeTime(timeString) {
     return new Time(...timeString.split(":"));
 }
 
+/**
+ * Time class. For easily saving scraped time data, which usually has the appearance of mm:ss (i.e 12:42 is 12 minutes 42 seconds)
+ */
 class Time {
     constructor(minutes, seconds) {
         if (Number.isNaN(Number.parseInt(minutes)) && Number.isNaN(Number.parseInt(seconds))) {

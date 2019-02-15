@@ -63,6 +63,13 @@ class GameData {
             }
         })
     }
+
+    getGoalsBy(team) {
+        if(team === this.away) {
+            return this.finalResult.away;
+        } else
+            return this.finalResult.home;
+    }
 }
 
 module.exports.GameData = GameData;

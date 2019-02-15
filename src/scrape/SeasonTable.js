@@ -1,5 +1,4 @@
 const C = require('cheerio')
-const phantom = require('phantom');
 const NHLTeamStatsURL = "http://www.nhl.com/stats/scoringTeam?reportType=season&seasonFrom=20182019&seasonTo=20182019&gameType=2&filter=gamesPlayed,gte,1&sort=points,wins";
 const puppeteer = require('puppeteer');
 

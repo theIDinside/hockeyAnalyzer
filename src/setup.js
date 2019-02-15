@@ -107,6 +107,9 @@ async function scrapeGames(startID=null, endID=null) {
                 let [gameDate, [aTeam, hTeam], [aPlayers, hPlayers], scoringSummary, shotsOnGoal] = values;
                 createGameDocument(gid.toString(), gameDate, aTeam, hTeam, aPlayers, hPlayers, shotsOnGoal, scoringSummary).then(document => {
                     document.save().then(_ => scrapedSuccessfully++);
+                }).catch(err => {
+                    if(err)
+                        throw err;
                 })
             }).catch(err => {
                 let logdata = dumpErrorStackTrace(err);
@@ -119,37 +122,18 @@ async function scrapeGames(startID=null, endID=null) {
             });
             browser.close();
         };
-        await func();
+        await func().catch(err =>
+        {
+            let logdata = dumpErrorStackTrace(err);
+            require("fs").writeFile("./error.log", logdata, err => {
+                if(err) {
+                    throw err;
+                }
+                console.log("Saved log data to error.log");
+            });
+        });
     }
     return { games: gameRange.length, scraped: scrapedSuccessfully };
-}
-
-function SetupUI() {
-    const readline = require('readline');
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stderr
-    });
-
-    console.log("Choose action:");
-    console.log("1: Start scraping season");
-    console.log("2: Lookup last scraped game");
-    console.log("3: Repair database");
-    rl.on('line', (l) => {
-        switch (l) {
-            case "1":
-                break;
-            case "2":
-                break;
-            case "3":
-                break;
-            case "q":
-            case "Q":
-                break;
-            default:
-                console.log(`Erroneous input: ${l}`);
-        }
-    });
 }
 
 function createGameInfoObject(urlString, id) {
