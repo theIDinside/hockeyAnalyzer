@@ -61,7 +61,7 @@ module.exports = {
         return newDate;
     },
     getFullTeamName: (key) => {
-        return Constants.teams[key.trim()];
+        return Constants.teams[key.trim().toUpperCase()];
     },
     dateStringify: dateStringify,
     l: l,

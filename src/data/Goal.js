@@ -2,7 +2,7 @@ const {teams} = require("../util/constants");
 const {Time, MakeTime} = require("../util/Time");
 
 class Goal {
-    constructor(goalNumber, period, time, strength, scoringTeam, goalScorer, assist1, assist2, onIceAway, onIceHome) {
+    constructor(goalNumber, period, time, strength, scoringTeam, goalScorer, assist1, assist2) {
         this.goalNumber = goalNumber;
         this.period = period;
         this.time = MakeTime(time);
@@ -10,7 +10,6 @@ class Goal {
         this.scoringTeam = scoringTeam;
         this.goalScorer = goalScorer;
         this.assists = [assist1, assist2];
-        this.rawStringData = `${goalNumber} ${period} ${time} ${this.strength} ${scoringTeam} ${goalScorer} ${assist1} ${assist2}`
     }
 
     translateStrength() {

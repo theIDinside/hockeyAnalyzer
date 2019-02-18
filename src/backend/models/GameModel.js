@@ -3,6 +3,7 @@ let Schema = mongoose.Schema;
 const {TeamTotal, PlayerStat, GoalieStat} = require('../../scrape/GameStats');
 const {Goal} = require('../../scrape/ScoringSummary');
 const {Time} = require('../../util/Time');
+const {GameData} = require("../../data/GameData")
 // This is the full model for all game stats, provided by www.nhl.com
 
 /// Recording individual player data for every game, can later on be used for individual player trends, something that is worth
@@ -201,7 +202,6 @@ GameModelSchema.methods.getFinalResult = () => {
     return this.finalResult
 };
 
-
 let Game = mongoose.model("Game", GameModelSchema);
 let ScoringSummary = mongoose.model("Scoring", ScoringSummarySchema);
 let GamePlayer = mongoose.model("Player", PlayerGameModelSchema);
@@ -270,20 +270,14 @@ function getGameByNumber(number) {
     let g = Game.findBy({ 'gameID': id });
 }
 
-/**
- *
- * @param x
- * @param team
- * @param analyzeCallback {function} - the type of analytical operation to be performed on the last x games.
- * @return {Promise<void>}
- */
-async function getLastXGamesPlayedBy(x, team, analyzeCallback) {
+
+
+
+async function getLastXGames(x, team, wins=false) {
     const {dateStringify} = require("../../util/utilities");
-    let sortDate = {datePlayed: -1};
-    return Game.find({$or: [{"teams.home": team}, {"teams.away": team}]})
-        .sort(sortDate)
-        .limit(x)
-        .then((games) => {
+    let dateSort = {datePlayed: -1}; // descending sort
+    if(wins) {
+        return Game.find({"teamWon": team}).sort(dateSort).limit(x).then(games => {
             if(games.length > 0) {
                 // TODO: Remove this logging to the console once fully functional and containing no issues.
                 console.log(`Found: ${games.length} games with ${team} playing.`);
@@ -291,38 +285,29 @@ async function getLastXGamesPlayedBy(x, team, analyzeCallback) {
                 for(let g of games) {
                     console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
                 }
-                return analyzeCallback(games);
+                return games;
             } else {
                 throw new Error(`Could not find any games with team ${team}`);
             }
         });
-}
-
-/**
- *
- * @param x
- * @param team
- * @param analyzeCallback {function} - the type of analytical operation to be performed on the last x games.
- * @return {Promise<void>}
- */
-async function getLastXGamesWonBy(x, team, analyzeCallback) {
-    const {dateStringify} = require("../../util/utilities");
-    let sortDate = {datePlayed: -1};
-    Game.find({$or: [{"teams.home": team}, {"teams.away": team}], $and: []})
-        .sort(sortDate)
-        .limit(x)
-        .then((games) => {
+    } else {
+        return Game.find({$or: [{"teams.home": team}, {"teams.away": team}]}).sort(dateSort).limit(x).then(games => {
             if(games.length > 0) {
+                // TODO: Remove this logging to the console once fully functional and containing no issues.
                 console.log(`Found: ${games.length} games with ${team} playing.`);
                 console.log(`These are the games:`);
                 for(let g of games) {
                     console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
                 }
-                return analyzeCallback(games);
+                return games;
+            } else {
+                throw new Error(`Could not find any games with team ${team}`);
             }
         });
+    }
 }
 
+
 module.exports = {
-    Game, ScoringSummary, GamePlayer, createGameDocument, getLastXGamesPlayedBy
+    Game, ScoringSummary, GamePlayer, createGameDocument, getLastXGamesPlayedBy, getLastXGamesWonBy, getLastXGames
 };
