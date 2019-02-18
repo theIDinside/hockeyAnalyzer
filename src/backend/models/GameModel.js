@@ -3,6 +3,7 @@ let Schema = mongoose.Schema;
 const {TeamTotal, PlayerStat, GoalieStat} = require('../../scrape/GameStats');
 const {Goal} = require('../../scrape/ScoringSummary');
 const {Time} = require('../../util/Time');
+const {GameData} = require("../../data/GameData")
 // This is the full model for all game stats, provided by www.nhl.com
 
 /// Recording individual player data for every game, can later on be used for individual player trends, something that is worth
@@ -164,6 +165,9 @@ GameModelSchema.methods.getTeamStats = () => {
     }
 };
 
+GameModelSchema.methods.toGameData = () => new GameData(this.gameID, this.teams.away, this.teams.home, this.datePlayed, this.finalResult, this.shotsOnGoal, this.faceOffWins, this.powerPlay, this.penaltyMinutes, this.hits, this.blockedShots, this.giveAways, this.scoringSummary);
+
+
 GameModelSchema.methods.getGoals = (period=0) => {
     return this.scoringSummary.reduce((res, goal) => {
         if(goal.scoringTeam === this.teams.away) {
@@ -198,7 +202,6 @@ GameModelSchema.methods.getFinalResult = () => {
     return this.finalResult
 };
 
-
 let Game = mongoose.model("Game", GameModelSchema);
 let ScoringSummary = mongoose.model("Scoring", ScoringSummarySchema);
 let GamePlayer = mongoose.model("Player", PlayerGameModelSchema);
@@ -216,30 +219,37 @@ let GamePlayer = mongoose.model("Player", PlayerGameModelSchema);
  */
 async function createGameDocument(gameId, date, aTeam, hTeam, aPlayers, hPlayers, shotsOnGoal, scoringSummaryArray) {
     let finalResult = scoringSummaryArray.finalResult;
-    let game = {
-        gameID:         Number.parseInt(gameId),
-        teams:          { away: aTeam.name,  home: hTeam.name },
-        datePlayed:     new Date(date),
-        finalResult:    finalResult,
-        teamWon: (finalResult.home > finalResult.away ? hTeam.name : aTeam.name),
-        shotsOnGoal:    shotsOnGoal,
-        faceOffWins:    { away: aTeam.faceoffWins, home: hTeam.faceoffWins },
-        powerPlay:      { away: { goals: aTeam.ppGoals, total: aTeam.ppAttempts }, home: { goals: hTeam.ppGoals, totals: hTeam.ppAttempts } },
-        penaltyMinutes: { away: aTeam.penaltyMinutes, home: hTeam.penaltyMinutes },
-        hits:           { away: aTeam.hitsMade, home: hTeam.hitsMade },
-        blockedShots:   { away: aTeam.shotsBlocked, home: hTeam.shotsBlocked },
-        giveAways:      { away: aTeam.giveAways, home: hTeam.giveAways },
-        playersAway: {
-            players: aPlayers.skaters.map(e => e.model), // each game, will have a subdocument included for every player who participated in the game
-            goalies: aPlayers.goalies.map(e => e.model)
-        },
-        playersHome: {
-            players: hPlayers.skaters.map(e => e.model),
-            goalies: hPlayers.goalies.map(e => e.model)
-        },
-        scoringSummary: scoringSummaryArray.summary.map(goal => goal.model)
-    };
-    return new Game(game);
+    try {
+        let game = {
+            gameID: Number.parseInt(gameId),
+            teams: {away: aTeam.name, home: hTeam.name},
+            datePlayed: new Date(date),
+            finalResult: finalResult,
+            teamWon: (finalResult.home > finalResult.away ? hTeam.name : aTeam.name),
+            shotsOnGoal: shotsOnGoal,
+            faceOffWins: {away: aTeam.faceoffWins, home: hTeam.faceoffWins},
+            powerPlay: {
+                away: {goals: aTeam.ppGoals, total: aTeam.ppAttempts},
+                home: {goals: hTeam.ppGoals, totals: hTeam.ppAttempts}
+            },
+            penaltyMinutes: {away: aTeam.penaltyMinutes, home: hTeam.penaltyMinutes},
+            hits: {away: aTeam.hitsMade, home: hTeam.hitsMade},
+            blockedShots: {away: aTeam.shotsBlocked, home: hTeam.shotsBlocked},
+            giveAways: {away: aTeam.giveAways, home: hTeam.giveAways},
+            playersAway: {
+                players: aPlayers.skaters.map(e => e.model), // each game, will have a subdocument included for every player who participated in the game
+                goalies: aPlayers.goalies.map(e => e.model)
+            },
+            playersHome: {
+                players: hPlayers.skaters.map(e => e.model),
+                goalies: hPlayers.goalies.map(e => e.model)
+            },
+            scoringSummary: scoringSummaryArray.summary.map(goal => goal.model)
+        };
+        return new Game(game);
+    } catch(err) {
+        throw err;
+    }
 }
 
 function getGameByNumber(number) {
@@ -260,56 +270,44 @@ function getGameByNumber(number) {
     let g = Game.findBy({ 'gameID': id });
 }
 
-/**
- *
- * @param x
- * @param team
- * @param analyzeCallback {function} - the type of analytical operation to be performed on the last x games.
- * @return {Promise<void>}
- */
-async function getLastXGamesPlayedBy(x, team, analyzeCallback) {
+
+
+
+async function getLastXGames(x, team, wins=false) {
     const {dateStringify} = require("../../util/utilities");
-    let sortDate = {datePlayed: -1};
-    Game.find({$or: [{"teams.home": team}, {"teams.away": team}]})
-        .sort(sortDate)
-        .limit(x)
-        .then((games) => {
+    let dateSort = {datePlayed: -1}; // descending sort
+    if(wins) {
+        return Game.find({"teamWon": team}).sort(dateSort).limit(x).then(games => {
             if(games.length > 0) {
+                // TODO: Remove this logging to the console once fully functional and containing no issues.
                 console.log(`Found: ${games.length} games with ${team} playing.`);
-                console.log(`These are the games:`)
+                console.log(`These are the games:`);
                 for(let g of games) {
                     console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
                 }
-                return analyzeCallback(games);
+                return games;
+            } else {
+                throw new Error(`Could not find any games with team ${team}`);
             }
         });
+    } else {
+        return Game.find({$or: [{"teams.home": team}, {"teams.away": team}]}).sort(dateSort).limit(x).then(games => {
+            if(games.length > 0) {
+                // TODO: Remove this logging to the console once fully functional and containing no issues.
+                console.log(`Found: ${games.length} games with ${team} playing.`);
+                console.log(`These are the games:`);
+                for(let g of games) {
+                    console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
+                }
+                return games;
+            } else {
+                throw new Error(`Could not find any games with team ${team}`);
+            }
+        });
+    }
 }
 
-/**
- *
- * @param x
- * @param team
- * @param analyzeCallback {function} - the type of analytical operation to be performed on the last x games.
- * @return {Promise<void>}
- */
-async function getLastXGamesWonBy(x, team, analyzeCallback) {
-    const {dateStringify} = require("../../util/utilities");
-    let sortDate = {datePlayed: -1};
-    Game.find({$or: [{"teams.home": team}, {"teams.away": team}], $and: []})
-        .sort(sortDate)
-        .limit(x)
-        .then((games) => {
-            if(games.length > 0) {
-                console.log(`Found: ${games.length} games with ${team} playing.`);
-                console.log(`These are the games:`)
-                for(let g of games) {
-                    console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
-                }
-                return analyzeCallback(games);
-            }
-        });
-}
 
 module.exports = {
-    Game, ScoringSummary, GamePlayer, createGameDocument, getLastXGamesPlayedBy
+    Game, ScoringSummary, GamePlayer, createGameDocument, getLastXGamesPlayedBy, getLastXGamesWonBy, getLastXGames
 };

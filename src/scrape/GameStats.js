@@ -45,7 +45,7 @@ async function getGameDate(htmlData) {
     let [mName, mDay, year] = nav(".date").text().split(" ").map(e => e.split(",").filter(e => e !== "")).join(" ").split(" ");
     let mNum = monthNameToNumber(mName);
     mDay = Int(mDay);
-    let dStr = `${year}-${((mName < 10) ? `0${mNum}` : `${mNum}`)}-${((mDay < 10) ? `0${mDay}` : `${mDay}`)}`;
+    let dStr = `${year}-${((mNum < 10) ? `0${mNum}` : `${mNum}`)}-${((mDay < 10) ? `0${mDay}` : `${mDay}`)}`;
     l(`Date is: ${dStr}`);
     return new Date(dStr);
 }

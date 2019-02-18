@@ -41,8 +41,8 @@ const type = (obj) => {
 function dumpErrorStackTrace(err) {
     let e = new Error("Fuck");
     if(err) {
-        console.log(`\nError Message: ${err.message}`);
-        console.log(`Stack: ${err.stack}`)
+        console.error(`\nError Message: ${err.message}`);
+        console.error(`Stack: ${err.stack}`)
         return`Error message: ${err.message}\n Stack: ${err.stack}`;
     }
 }
@@ -61,7 +61,7 @@ module.exports = {
         return newDate;
     },
     getFullTeamName: (key) => {
-        return Constants.teams[key.trim()];
+        return Constants.teams[key.trim().toUpperCase()];
     },
     dateStringify: dateStringify,
     l: l,

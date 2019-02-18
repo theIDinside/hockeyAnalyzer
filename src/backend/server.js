@@ -6,10 +6,11 @@
 
 const Hapi = require("hapi");
 const {dumpErrorStackTrace} = require("../util/utilities");
-const mongoose = require('mongoose');
+const {DB, mongoDBHost} = require('./db');
+const routes = require("./routes")
 const fs = require("fs");
 const Standings = require('./models/StandingsModel');
-const Game = require('./models/GameModel');
+const {getLastXGamesPlayedBy} = require('./models/GameModel');
 const Player = require('./models/PlayerModel');
 const {getFullTeamName} = require("../util/constants");
 
@@ -19,23 +20,18 @@ const server = Hapi.server({
     host: "localhost"
 });
 
-const mongoDBHost = () => {
-    const user = "NHLAnalytics"; // this user does not have write access
-    const pw = "season2018"; // so this will be what the end user uses to connect.
-    const remoteNHLDB = `mongodb://${user}:${pw}@ds125945.mlab.com:25945/nhl`;
-    if(process.env.DEBUGDB)
-        return `mongodb://localhost/nhltest`;
-    else
-        return remoteNHLDB;
-};
-
 const init = async () => {
-    mongoose.Promise = global.Promise;
-    await server.start();
-    mongoose.connect(mongoDBHost()).then(v => {
-        console.log(`Connected to database backend: ${mongoDBHost()}`);
-    });
-    console.log(`Server started and running at: ${server.info.uri}`);
+    try {
+        routes.forEach(r => server.route(r));
+        await server.start();
+        console.log(`Server started and running at: ${server.info.uri}`);
+    } catch (e) {
+        let logData = dumpErrorStackTrace(e);
+        fs.writeFile("./initerror.log", logData, (err) => {
+            console.error("Couldn't log error data!");
+            let _ = dumpErrorStackTrace(err);
+        })
+    }
 };
 
 process.on('unhandledRejection', (err) => {
@@ -44,35 +40,6 @@ process.on('unhandledRejection', (err) => {
         dumpErrorStackTrace(err);
     });
     process.exit(1);
-});
-
-let localTestMDBHost = 'mongodb://localhost/nhltest';
-let databaseName = "";
-
-let db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error.'));
-db.on("open", () => {
-    console.log(`Connected to database @ ${mongoDBHost()}`);
-});
-
-// how to register a route
-server.route({
-    method: "GET",
-    path: "/",
-    handler: (req, h) => {
-        // here we handle the request, and send back the requested data, or requested analytical information
-        return `This data gets sent to, for example the browser.`
-    }
-});
-
-// registering a route with params
-server.route({
-    method: "GET",
-    path: "/{team}",
-    handler: (request, h) => {
-        let teamName = getFullTeamName(encodeURIComponent(request.params.team)); // for example if: http://somehostaddr.com/ANA, will retrieve some data D for team "Anaheim Mighty Ducks" (ANA).
-
-    }
 });
 
 init();

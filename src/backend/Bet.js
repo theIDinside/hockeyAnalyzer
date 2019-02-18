@@ -1,4 +1,4 @@
-const Trends = require('./Trend');
+const Trends = require('./AnalyticsAPI');
 const {Game, ScoringSummary, GamePlayer, getLastXGamesPlayedBy} = require("./models/GameModel");
 const {Team} = require("./Team");
 

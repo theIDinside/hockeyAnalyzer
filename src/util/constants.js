@@ -1,3 +1,5 @@
+'use strict';
+// Never changing constants. Teams are teams are teams.
 const shortTeamNames = "ANA BOS ARI BUF CAR CHI CGY CBJ COL DAL EDM NJD NYI NYR MIN PHI DET LAK OTT MTL PIT WSH STL SJS TBL VAN TOR WPG NSH VGK FLA";
 const teamKeys = shortTeamNames.split(" ");
 const seasonStart = '2018-10-03';
