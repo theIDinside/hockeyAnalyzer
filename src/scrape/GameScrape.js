@@ -9,10 +9,7 @@ const {Time, MakeTime} = require('../util/Time');
 
 const getGamesListItem = (dateString) => `nhl-scores__${dateString}`;
 const getGamePageURL = (gameNumber) => `https://www.nhl.com/gamecenter/201802${gameNumber}`;
-const getGameSummaryURL = (gameID) => {
-    let tmp = gameID.toString();
-    return `http://www.nhl.com/scores/htmlreports/20182019/GS02${removePrefixOf(tmp, 6)}.HTM`
-};
+const getGameSummaryURL = (gameID) => `http://www.nhl.com/scores/htmlreports/20182019/GS02${removePrefixOf(gameID.toString(), 6)}.HTM`;
 
 
 /// This function, retrieves from the site, the games for the coming 6 days (including the provided date in the argument. This is I guess somehow, what the site prefetches or something.)

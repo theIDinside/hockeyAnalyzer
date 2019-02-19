@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 let Schema = mongoose.Schema;
 const {TeamTotal, PlayerStat, GoalieStat} = require('../../scrape/GameStats');
-const {Goal} = require('../../scrape/ScoringSummary');
+const {Goal} = require('../../data/Goal');
 const {Time} = require('../../util/Time');
 const {GameData} = require("../../data/GameData")
 // This is the full model for all game stats, provided by www.nhl.com
@@ -54,16 +54,13 @@ let ScoringSummarySchema = new Schema({
     assists: [String],
 });
 
-ScoringSummarySchema.methods.toGoal = () => {
-    return {
-        goalNumber: this.goal,
-        period: this.period,
-        time: new Time(this.time.minutes, this.time.seconds),
-        strength: this.strength,
-        scoringTeam: this.scoringTeam,
-        goalScorer: this.goalScorer,
-        assists: this.assists
-    }
+function toGoalData(g) {
+    console.log(`${g.goal} ${g.period} ${g.time.minutes}:${g.time.seconds} ${g.strength} ${g.scoringTeam} ${g.goalScorer}`);
+    return new Goal(g.goal, g.period, new Time(g.time.minutes, g.time.seconds).toString(), g.strength, g.scoringTeam, g.goalScorer, g.assists[0], g.assists[1]);
+}
+
+ScoringSummarySchema.methods.toGoal = function(){
+    return new Goal(this.goal, this.period, new Time(this.time.minutes, this.time.seconds).toString(), this.strength, this.scoringTeam, this.goalScorer, [...this.assists])
 };
 
 
@@ -75,11 +72,11 @@ let GameModelSchema = new Schema({
     gameID:         { type: Number, required: true, unique: true},
     teams:          {
         type: { away: String,  home: String },
-        required: true,
+        required: true
     },
     teamWon: {
         type:  String,
-        required: true,
+        required: true
     },
     datePlayed:     { type: Date, required: true },
     finalResult:    { type: { away: Number, home: Number }, required: true  },
@@ -131,7 +128,7 @@ let GameModelSchema = new Schema({
     scoringSummary: [ScoringSummarySchema]
 });
 
-GameModelSchema.methods.getGameID = () => {
+GameModelSchema.methods.getGameID = function(){
     return this.gameID;
 };
 
@@ -139,17 +136,17 @@ GameModelSchema.post('save', (gameDoc) => {
     console.log(`Saved game ${gameDoc.gameID}, successfully to database. ${gameDoc.teams.away} vs ${gameDoc.teams.home}`)
 });
 
-GameModelSchema.methods.getTeams = () => {
+GameModelSchema.methods.getTeams = function(){
     return [this.teams.home, this.teams.away];
 };
 
-GameModelSchema.methods.getTotalShots = () => {
+GameModelSchema.methods.getTotalShots = function(){
     for(let period of this.shotsOnGoal) {
 
     }
 };
 
-GameModelSchema.methods.getTeamStats = () => {
+GameModelSchema.methods.getTeamStats = function(){
     return {
         gameID: this.gameID,
         teams: this.teams,
@@ -165,10 +162,14 @@ GameModelSchema.methods.getTeamStats = () => {
     }
 };
 
-GameModelSchema.methods.toGameData = () => new GameData(this.gameID, this.teams.away, this.teams.home, this.datePlayed, this.finalResult, this.shotsOnGoal, this.faceOffWins, this.powerPlay, this.penaltyMinutes, this.hits, this.blockedShots, this.giveAways, this.scoringSummary);
 
 
-GameModelSchema.methods.getGoals = (period=0) => {
+GameModelSchema.methods.toGameData = function(){
+    return new GameData(this.gameID, this.teams.away, this.teams.home, this.datePlayed, this.finalResult, this.shotsOnGoal, this.faceOffWins, this.powerPlay, this.penaltyMinutes, this.hits, this.blockedShots, this.giveAways, this.scoringSummary.map(g => toGoalData(g)));
+};
+
+
+GameModelSchema.methods.getGoals = function(period=0) {
     return this.scoringSummary.reduce((res, goal) => {
         if(goal.scoringTeam === this.teams.away) {
             return {away: res.away +1, home: res.home }
@@ -178,7 +179,7 @@ GameModelSchema.methods.getGoals = (period=0) => {
     }, {away: 0, home: 0});
 };
 
-GameModelSchema.methods.getGoalsByHomeTeam = () => {
+GameModelSchema.methods.getGoalsByHomeTeam = function(){
     let goals = [0, 0, 0];
         for(let g of this.scoringSummary) {
             if(g.scoringTeam === this.teams.home) {
@@ -188,7 +189,7 @@ GameModelSchema.methods.getGoalsByHomeTeam = () => {
     return goals;
 };
 
-GameModelSchema.methods.getGoalsByAwayTeam = () => {
+GameModelSchema.methods.getGoalsByAwayTeam = function(){
     let goals = [0, 0, 0];
         for(let g of this.scoringSummary) {
             if(g.scoringTeam === this.teams.away) {
@@ -198,7 +199,7 @@ GameModelSchema.methods.getGoalsByAwayTeam = () => {
     return goals;
 };
 
-GameModelSchema.methods.getFinalResult = () => {
+GameModelSchema.methods.getFinalResult = function(){
     return this.finalResult
 };
 
@@ -309,5 +310,4 @@ async function getLastXGames(x, team, wins=false) {
 
 
 module.exports = {
-    Game, ScoringSummary, GamePlayer, createGameDocument, getLastXGamesPlayedBy, getLastXGamesWonBy, getLastXGames
-};
+    Game, ScoringSummary, GamePlayer, createGameDocument };

@@ -21,4 +21,4 @@ GameInfoSchema.post("save", (gInfoDoc) => {
 
 let GameInfo = mongoose.model("GameInfo", GameInfoSchema);
 
-module.exports = { GameInfo, reqGameData };
+module.exports = { GameInfo };

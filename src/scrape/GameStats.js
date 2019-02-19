@@ -1,10 +1,8 @@
 const {PlayerStat} = require("../data/PlayerStat");
 const {GoalieStat} = require("../data/GoalieStat");
 const {TeamTotal} = require("../data/TeamTotal");
-const {Time} = require("../util/Time");
 const C = require('cheerio');
 const {l, Int, Float} = require('../util/utilities');
-const {teams} = require('../util/constants');
 const shotsOnGoalDiv = "shotsongoal-container";
 const teamTotals = `wrap-teamstats-container`;
 

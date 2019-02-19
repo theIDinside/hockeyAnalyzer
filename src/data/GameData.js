@@ -37,7 +37,7 @@ class GameData {
         return this.id.toString()[5] === "2";
     }
 
-    getOtherTeamName = team => (team === this.away) ? this.home : this.away;
+    getOtherTeamName(team) { return (team === this.away) ? this.home : this.away; }
 
     get totalScore() {
         return this.finalResult.away + this.finalResult.home;
@@ -71,6 +71,7 @@ class GameData {
             throw new Error(`You can only provide 1, 2, 3 or 4 (OT) as periods. If you provide 5, you are asking for data of entire game. You provided ${period}`);
         }
         return this.scoringSummary.reduce((res, goal) => {
+            console.log(`${goal.prettyString()}`);
             if(goal.getScoringTeam() === team && goal.getScoringPeriod() === period) {
                 return res + 1;
             } else {

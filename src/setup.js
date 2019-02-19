@@ -8,7 +8,7 @@ const {getGameURL, l, seasonStart} = require('./util/utilities');
 const {teams, getFullTeamName, dumpErrorStackTrace} = require("./util/constants");
 const puppeteer = require('puppeteer');
 const {createGameDocument, Game, getLastXGamesPlayedBy} = require('./backend/models/GameModel');
-const GameInfo = require("./backend/models/GameInfoModel");
+const { GameInfo }= require("./backend/models/GameInfoModel");
 const mongoose = require('mongoose');
 
 function* IDRange(start, end) {

@@ -9,13 +9,14 @@ const {Game} = require("../models/GameModel");
  * @param team {String}
  * @param games {Game[]}
  * @param period {Number}
- * @return {{average: number, games: *}}
+ * @return {{average: Number, games: Number}}
  */
 function GFPeriodAverage(team, games, period) {
     // oh the lovely universe of functional programming.
     return {
-        games: games,
-        average: games.map(g => g.toGameData().getGoalsByPeriod(team, period)).reduce((res, goals) => res + goals, 0) / games.length
+        games: games.length,
+        average: games.map(g => g.toGameData().getGoalsByPeriod(team, period))
+            .reduce((res, goals) => res + goals, 0) / games.length
     }
 }
 
@@ -25,12 +26,15 @@ function GFPeriodAverage(team, games, period) {
  * @param team {String}
  * @param games {Game[]}
  * @param period {Number}
- * @return {{average: number, games: *}}
+ * @return {{average: Number, games: Number}}
  */
 function GAPeriodAverage(team, games, period) {
+    console.log("Trying to fetch goal against period average");
     return {
-        games: games,
-        average: games.map(g => g.toGameData()).map(gameData => gameData.getGoalsByPeriod(gameData.getOtherTeamName(team), period)).reduce((res, goals) => res + goals, 0) / games.length
+        games: games.length,
+        average: games.map(g => g.toGameData())
+            .map(gameData => gameData.getGoalsByPeriod(gameData.getOtherTeamName(team), period))
+            .reduce((res, goals) => res + goals, 0) / games.length
     }
 }
 
@@ -39,12 +43,14 @@ function GAPeriodAverage(team, games, period) {
  * @param team {String}
  * @param games {Game[]}
  * @param period {Number}
- * @return {{average: number, games: *}}
+ * @return {{average: Number, games: Number}}
  */
 function GPeriodAverage(team, games, period) {
     return {
-        games: games,
-        average: games.map(g => g.toGameData()).map(gd => gd.getGoalTotalByPeriod(period)).reduce((res, goals) => res+goals, 0) / games
+        games: games.length,
+        average: games.map(g => g.toGameData())
+            .map(gd => gd.getGoalTotalByPeriod(period))
+            .reduce((res, goals) => res+goals, 0) / games
     }
 }
 
@@ -53,13 +59,14 @@ function GPeriodAverage(team, games, period) {
  * @param team {String}
  * @param games {Game[]}
  * @param period {Number}
- * @return {{wins: *, period: *, games: *}}
+ * @return {{wins: Boolean[], period: Number, games: Number}}
  */
 function PeriodWins(team, games, period) {
     return {
-        games: games,
+        games: games.length,
         period: period,
-        wins: games.map(g => g.toGameData()).map((i, gd) => gd.getGoalsByPeriod(team, period) > gd.getGoalsByPeriod(gd.getOtherTeamName(team), period))
+        wins: games.map(g => g.toGameData())
+            .map((i, gd) => gd.getGoalsByPeriod(team, period) > gd.getGoalsByPeriod(gd.getOtherTeamName(team), period))
     }
 }
 
