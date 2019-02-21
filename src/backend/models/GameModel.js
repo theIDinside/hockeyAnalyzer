@@ -4,6 +4,7 @@ const {TeamTotal, PlayerStat, GoalieStat} = require('../../scrape/GameStats');
 const {Goal} = require('../../data/Goal');
 const {Time} = require('../../util/Time');
 const {GameData} = require("../../data/GameData")
+
 // This is the full model for all game stats, provided by www.nhl.com
 
 /// Recording individual player data for every game, can later on be used for individual player trends, something that is worth
@@ -55,7 +56,6 @@ let ScoringSummarySchema = new Schema({
 });
 
 function toGoalData(g) {
-    console.log(`${g.goal} ${g.period} ${g.time.minutes}:${g.time.seconds} ${g.strength} ${g.scoringTeam} ${g.goalScorer}`);
     return new Goal(g.goal, g.period, new Time(g.time.minutes, g.time.seconds).toString(), g.strength, g.scoringTeam, g.goalScorer, g.assists[0], g.assists[1]);
 }
 

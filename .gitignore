@@ -7,3 +7,4 @@ loginToDb.sh
 api.key
 
 test\.js
+.db

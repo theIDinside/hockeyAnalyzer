@@ -33,12 +33,6 @@ async function getLastXGamesWonBy(x, team) {
     let dateSort = {datePlayed: -1}; // descending sort
     return Game.find(WinsPredicate(team)).sort(dateSort).limit(x).then((games) => {
         if(games.length > 0) {
-            // TODO: Remove this logging to the console once fully functional and containing no issues.
-            console.log(`Found: ${games.length} games with ${team} playing and they won.`);
-            console.log(`These are the games:`);
-            for(let g of games) {
-                console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
-            }
             return games;
         } else {
             throw new Error(`Could not find any games with team ${team}`);
@@ -56,12 +50,6 @@ async function getLastXGamesLostBy(x, team) {
     let dateSort = {datePlayed: -1}; // descending sort
     return Game.find(LossPredicate(team)).sort(dateSort).limit(x).then((games) => {
         if(games.length > 0) {
-            // TODO: Remove this logging to the console once fully functional and containing no issues.
-            console.log(`Found: ${games.length} games with ${team} playing and they lost.`);
-            console.log(`These are the games:`);
-            for(let g of games) {
-                console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
-            }
             return games;
         } else {
             throw new Error(`Could not find any games with team ${team}`);
@@ -80,12 +68,6 @@ async function getLastXGamesPlayedBy(x, team) {
     let dateSort = {datePlayed: -1}; // descending sort
     return Game.find(DefaultPredicate(team)).sort(dateSort).limit(x).then((games) => {
         if(games.length > 0) {
-            // TODO: Remove this logging to the console once fully functional and containing no issues.
-            console.log(`Found: ${games.length} games with ${team} playing.`);
-            console.log(`These are the games:`);
-            for(let g of games) {
-                console.log(`Game: ${g.gameID}\t "${g.teams.away} vs ${g.teams.home}".\t Date played: ${dateStringify(g.datePlayed)}`);
-            }
             return games;
         } else {
             throw new Error(`Could not find any games with team ${team}`);
@@ -109,9 +91,9 @@ async function reqGameInfo(gameID) {
     })
 }
 
-async function getGamesToday() {
+/* async function getGamesToday() {
     let d = new Date();
-    if(d.getHours() <= 5) {
+    if(d.getHours() <= 5) { // correct for time difference. 5-6 am Sweden, is around 8-9 LA time.
         d.setUTCDate(d.getUTCDay() - 1);
         let search = dateStringify(d);
         return GameInfo.find({datePlayed: new Date(search)}).then(res => {
@@ -141,6 +123,10 @@ async function getGamesToday() {
             }
         })
     }
+}
+*/
+async function getGamesToday() {
+   return GameInfo.findGamesToday();
 }
 
 const API = { ...GameAPI, ...PeriodAPI, getLastXGamesWonBy, getLastXGamesLostBy, getLastXGamesPlayedBy, reqGameInfo, getGamesToday};

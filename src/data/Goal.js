@@ -63,12 +63,7 @@ class Goal {
     }
 
     isEmptyNet() {
-        let tmp = this.strength.split("-");
-        for (let a of tmp) {
-            if (a === "EN")
-                return true;
-        }
-        return false;
+        return this.strength.includes("Empty Net");
     }
 
     getJerseyAndName() {
@@ -92,7 +87,7 @@ class Goal {
     }
 
     getScoringTeam() {
-        return teams[this.scoringTeam.toUpperCase()];
+        return this.scoringTeam;
     }
 }
 

@@ -12,25 +12,29 @@ const API = require("./analytics/api").API;
 /**
  *
  * @param team
- * @return {Promise<{GAPeriodAverages: Number[], EmptyNetGoals: Boolean[], EmptyNetLetUps: Boolean[], PeriodWins: Boolean[], TotalGoalsGameAverage: Number, GFAverage: Number, GAAverage: Number, GFPeriodAverages: Number[], TotalGoalsPeriodAverage: Number[]}>}
+ * @return {Promise<{GAPeriodAverages: Number[], EmptyNetGoals: Boolean[], EmptyNetLetUps: Boolean[], PeriodWins: Boolean[], TotalGoalsGameAverage: Number, GFAverage: Number, GAAverage: Number, GFPeriodAverages: Number[], TotalGoalsPeriodAverage: Number[]}, passed: Boolean>}
  */
 async function FullAnalysis(team) {
+    let gameSpan = 10;
     try {
-        let games = await API.getLastXGamesPlayedBy(10, team);
-        let wonGames = await API.getLastXGamesWonBy(10, team);
-        let lostGames = await API.getLastXGamesLostBy(10, team); // used to analyze how often they let up a goal, into empty net, when they lose.
-        return {
-            GAAverage: API.GAGameAverage(team, games),
-            GFAverage: API.GFGameAverage(team, games),
-            TotalGoalsGameAverage: API.GGameAverage(team, games),
-            GAPeriodAverages: [...Array(4).keys()].filter(i => i > 0).map(period => API.GAPeriodAverage(team, games, period)),
-            GFPeriodAverages: [...Array(4).keys()].filter(i => i > 0).map(period => API.GFPeriodAverage(team, games, period)),
-            PeriodWins: [...Array(4).keys()].filter(i => i > 0).map(period => API.PeriodWins(team, games, period)),
-            TotalGoalsPeriodAverage: [...Array(4).keys()].filter(i => i > 0).map(period => API.GPeriodAverage(team, games, period)),
-            EmptyNetGoals: API.EmptyNetScoring(team, wonGames),
-            EmptyNetLetUps: API.EmptyNetLetUps(team, lostGames),
-            passed: true
-        }
+        return await Promise.all([API.getLastXGamesPlayedBy(gameSpan*2, team), API.getLastXGamesWonBy(gameSpan*2, team), API.getLastXGamesLostBy(gameSpan*2, team)]).then(allGames => {
+        let [games, wonGames, lostGames] = allGames; // lostGames, used to analyze how often they let up a goal, into empty net, when they lose.
+            return {
+                team: team,
+                GAAverage: API.GAGameAverage(team, games),
+                GFAverage: API.GFGameAverage(team, games),
+                TotalGoalsGameAverage: API.GGameAverage(team, games),
+                GAPeriodAverages: [...Array(4).keys()].filter(i => i > 0).map(period => API.GAPeriodAverage(team, games, period)),
+                GFPeriodAverages: [...Array(4).keys()].filter(i => i > 0).map(period => API.GFPeriodAverage(team, games, period)),
+                PeriodWins: [...Array(4).keys()].filter(i => i > 0).map(period => API.PeriodWins(team, games, period)),
+                TotalGoalsPeriodAverage: [...Array(4).keys()].filter(i => i > 0).map(period => API.GPeriodAverage(team, games, period)),
+                EmptyNetGoals: API.EmptyNetScoring(team, wonGames),
+                EmptyNetLetUps: API.EmptyNetLetUps(team, lostGames),
+                passed: true
+            }
+        }).catch(err => {
+            console.log(`Error: ${err}`);
+        })
     } catch (err) {
         const {dumpErrorStackTrace} = require("../util/utilities")
         dumpErrorStackTrace(err);
@@ -44,7 +48,7 @@ async function FullAnalysis(team) {
 
 // TODO:
 let BetRoute = {
-    method: "POST",
+    method: "GET",
     path: "/game/{gameID}",
     handler: async (request, h) => {
         let gameID = Number.parseInt(encodeURIComponent(request.params.gameID));
@@ -58,6 +62,12 @@ let BetRoute = {
         });
 
         return g;
+    },
+    options: {
+        cors: {
+            origin: ['*'],
+            additionalHeaders: ['cache-control', 'x-requested-with']
+        }
     }
 };
 
@@ -81,6 +91,12 @@ let GamesTodayRoute = {
         } catch (e) {
             dumpErrorStackTrace(e);
         }
+    },
+    options: {
+        cors: {
+            origin: ['*'],
+            additionalHeaders: ['cache-control', 'x-requested-with']
+        }
     }
 };
 
@@ -94,23 +110,37 @@ let AnalyzeComingGameRoute = {
         let gameID = Number.parseInt(request.params.ID);
         try {
             let gameInfo = await API.reqGameInfo(gameID);
-            let homeAnalysis = await FullAnalysis(gameInfo.teams.home);
-            let awayAnalysis = await FullAnalysis(gameInfo.teams.away);
-            return {
-                homeTeamAnalysis: homeAnalysis,
-                awayTeamAnalysis: awayAnalysis
-            }
+            return await Promise.all([FullAnalysis(gameInfo.teams.home), FullAnalysis(gameInfo.teams.away)]).then(values => {
+            let [homeAnalysis, awayAnalysis] = values;
+                return {
+                    homeTeamAnalysis: homeAnalysis,
+                    awayTeamAnalysis: awayAnalysis
+                }
+            });
         } catch (e) {
 
+        }
+    },
+    options: {
+        cors: {
+            origin: ['*'],
+            additionalHeaders: ['cache-control', 'x-requested-with']
         }
     }
 };
 // TODO:
 let TeamRoute = {
     method: "GET",
-        path: "/{team}",
+        path: "/team/{teamName}",
     handler: async (request, h) => {
-        let teamName = getFullTeamName(encodeURIComponent(request.params.team)); // for example if: http://somehostaddr.com/ANA, will retrieve some data D for team "Anaheim Mighty Ducks" (ANA).
+        let teamName = getFullTeamName(encodeURIComponent(request.params.teamName)); // for example if: http://somehostaddr.com/ANA, will retrieve some data D for team "Anaheim Mighty Ducks" (ANA).
+
+    },
+    options: {
+        cors: {
+            origin: ['*'],
+            additionalHeaders: ['cache-control', 'x-requested-with']
+        }
     }
 };
 // TODO:
@@ -120,6 +150,12 @@ let DefaultRoute = {
     handler: async (req, h) => {
         // here we handle the request, and send back the requested data, or requested analytical information
         return `This data gets sent to, for example the browser.`
+    },
+    options: {
+        cors: {
+            origin: ['*'],
+            additionalHeaders: ['cache-control', 'x-requested-with']
+        }
     }
 };
 

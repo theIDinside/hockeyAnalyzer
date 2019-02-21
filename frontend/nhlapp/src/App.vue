@@ -1,14 +1,22 @@
 <template>
   <div id="app">
-    <img src="./assets/logo.png">
-    <router-view/>
+    <div>
+      <games></games>
+    </div>
+    <div>
+      <router-view/>
+    </div>
   </div>
 </template>
 
 <script>
+import Games from '@/components/Games'
 
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    Games
+  }
 }
 </script>
 

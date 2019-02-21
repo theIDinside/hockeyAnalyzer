@@ -13,10 +13,19 @@ const {Game} = require("../models/GameModel");
  */
 function GFPeriodAverage(team, games, period) {
     // oh the lovely universe of functional programming.
+    const span = games.length / 2;
+    let trendChartData = [...Array(span).keys()]
+        .map((v, index) =>
+            games
+                .filter((g, i) => i < (span+index+1) && i > index)
+                .map(g => g.toGameData().getGoalsByPeriod(team, period))
+                .reduce((res, goals) => res + goals, 0) / span);
     return {
-        games: games.length,
-        average: games.map(g => g.toGameData().getGoalsByPeriod(team, period))
-            .reduce((res, goals) => res + goals, 0) / games.length
+        games: span,
+        period: period,
+        trendChartData: trendChartData,
+        average: games.filter((g,i) => i >= span).map(g => g.toGameData().getGoalsByPeriod(team, period))
+            .reduce((res, goals) => res + goals, 0) / span
     }
 }
 
@@ -26,15 +35,26 @@ function GFPeriodAverage(team, games, period) {
  * @param team {String}
  * @param games {Game[]}
  * @param period {Number}
- * @return {{average: Number, games: Number}}
+ * @return {{average: Number, games: Number, period: Number}}
  */
 function GAPeriodAverage(team, games, period) {
-    console.log("Trying to fetch goal against period average");
+    const span = games.length / 2;
+    let trendChartData = [...Array(span).keys()]
+        .map((v, index) =>
+            games
+                .filter((g, i) => i < (span+index+1) && i > index)
+                .map(g => g.toGameData())
+                .map(gd => gd.getGoalsByPeriod(gd.getOtherTeamName(team), period))
+                .reduce((res, goals) => res + goals, 0) / span);
     return {
-        games: games.length,
-        average: games.map(g => g.toGameData())
-            .map(gameData => gameData.getGoalsByPeriod(gameData.getOtherTeamName(team), period))
-            .reduce((res, goals) => res + goals, 0) / games.length
+        games: span,
+        period: period,
+        trendChartData: trendChartData,
+        average: games.filter((g, i) => i >= span).map(g => g.toGameData())
+            .map(gameData => {
+                return gameData.getGoalsByPeriod(gameData.getOtherTeamName(team), period)
+            })
+            .reduce((res, goals) => res + goals, 0) / span
     }
 }
 
@@ -43,14 +63,23 @@ function GAPeriodAverage(team, games, period) {
  * @param team {String}
  * @param games {Game[]}
  * @param period {Number}
- * @return {{average: Number, games: Number}}
+ * @return {{average: Number, games: Number, period: Number}}
  */
 function GPeriodAverage(team, games, period) {
+    const span = games.length / 2;
+    let trendChartData = [...Array(span).keys()]
+        .map((v, index) =>
+            games
+                .filter((g, i) => i < (span+index+1) && i > index)
+                .map(g => g.toGameData().getGoalTotalByPeriod(period))
+                .reduce((res, goals) => res + goals, 0) / span);
     return {
-        games: games.length,
-        average: games.map(g => g.toGameData())
+        games: span,
+        period: period,
+        trendChartData: trendChartData,
+        average: games.filter((g,i) => i>=span).map(g => g.toGameData())
             .map(gd => gd.getGoalTotalByPeriod(period))
-            .reduce((res, goals) => res+goals, 0) / games
+            .reduce((res, goals) => res+goals, 0) / span
     }
 }
 
@@ -59,14 +88,17 @@ function GPeriodAverage(team, games, period) {
  * @param team {String}
  * @param games {Game[]}
  * @param period {Number}
- * @return {{wins: Boolean[], period: Number, games: Number}}
+ * @return {{wins: Boolean[], period: Number, games: Number, pct: Number}}
  */
 function PeriodWins(team, games, period) {
+    const span = games.length / 2;
+    let wins = games.filter((g, i) => i >= span).map(g => g.toGameData())
+        .map(gd => gd.getGoalsByPeriod(team, period) > gd.getGoalsByPeriod(gd.getOtherTeamName(team), period))
     return {
-        games: games.length,
+        games: span,
         period: period,
-        wins: games.map(g => g.toGameData())
-            .map((i, gd) => gd.getGoalsByPeriod(team, period) > gd.getGoalsByPeriod(gd.getOtherTeamName(team), period))
+        wins: wins,
+        pct: wins.filter(v => v).length / span * 100.00
     }
 }
 

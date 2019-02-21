@@ -71,13 +71,12 @@ class GameData {
             throw new Error(`You can only provide 1, 2, 3 or 4 (OT) as periods. If you provide 5, you are asking for data of entire game. You provided ${period}`);
         }
         return this.scoringSummary.reduce((res, goal) => {
-            console.log(`${goal.prettyString()}`);
             if(goal.getScoringTeam() === team && goal.getScoringPeriod() === period) {
                 return res + 1;
             } else {
                 return res;
             }
-        })
+        }, 0)
     }
 
     getGoalTotalByPeriod(period) {
@@ -87,7 +86,7 @@ class GameData {
             } else {
                 return res;
             }
-        })
+        }, 0)
     }
 
     getGoalsBy(team) {

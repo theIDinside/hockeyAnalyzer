@@ -22,7 +22,7 @@ const remoteDB = `mongodb://${user}:${pass}@ds125945.mlab.com:25945/nhl`;
 
 const mongoDBHost = () => {
     if(process.env.DEBUGDB === "ON")
-        return `mongodb://localhost/nhltest`;
+        return `mongodb://localhost/nhl`;
     else
         return remoteDB;
 };
@@ -85,10 +85,9 @@ async function scrapeGames(startID=null, endID=null) {
     endID = (endID === null || endID === undefined) ? gameRange[gameRange.length-1] : endID;
 
     gameRange = gameRange.filter((val, index) => val >= startID && val <= endID);
-
+    let browser = await puppeteer.launch();
     for(let gid of gameRange) {
         const func = async () => {
-            let browser = await puppeteer.launch();
             l(`Scraping game: ${gid}`);
             let gameCenterURL = `${gameCenterURLPrefix}${gid}`;
             const page = await browser.newPage();
@@ -120,7 +119,7 @@ async function scrapeGames(startID=null, endID=null) {
                     console.log("Saved log data to error.log");
                 });
             });
-            browser.close();
+            await page.close();
         };
         await func().catch(err =>
         {
@@ -133,6 +132,7 @@ async function scrapeGames(startID=null, endID=null) {
             });
         });
     }
+    browser.close();
     return { games: gameRange.length, scraped: scrapedSuccessfully };
 }
 

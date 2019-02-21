@@ -14,8 +14,13 @@
     "build": "node build/build.js"
   },
   "dependencies": {
+    "axios": "^0.18.0",
+    "chartjs": "^0.3.24",
+    "hchs-vue-charts": "^1.2.8",
     "vue": "^2.5.2",
-    "vue-router": "^3.0.2"
+    "vue-chartjs": "^3.4.0",
+    "vue-router": "^3.0.2",
+    "vue2-frappe": "^1.0.28"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",
