@@ -8,17 +8,19 @@
     <div class="columns">
       <div class="column" v-bind:id="homeTeam">
         <h2>{{homeTeam}} stats</h2><hr style="border-width: 10px" class="myOwnHr">
-      <line-chart title="Goals against/Game average home" v-bind:dataType="'GA Game Average'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GAAverage.trendChartData }"></line-chart>
-      <line-chart title="Goals for/Game average home" v-bind:dataType="'GF Game Average'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GFAverage.trendChartData }"></line-chart>
-      <line-chart title="Goals for/Period average home" v-bind:dataType="'GFPA'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GFPeriodAverages }"></line-chart>
-      <line-chart title="Goals against/Period average home" v-bind:dataType="'GAPA'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GAPeriodAverages }"></line-chart>
+      <line-chart title="Goals against/Game home" v-bind:dataType="'GA Game Average'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GAAverage.trendChartData }"></line-chart>
+      <line-chart title="Goals for/Game home" v-bind:dataType="'GF Game Average'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GFAverage.trendChartData }"></line-chart>
+      <line-chart title="Total goals/Game home" v-bind:dataType="'Total Goals Game'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.TotalGoalsGameAverage.trendChartData  }"></line-chart>
+      <line-chart title="Goals for/Period home" v-bind:dataType="'GFPA'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GFPeriodAverages }"></line-chart>
+      <line-chart title="Goals against/Period home" v-bind:dataType="'GAPA'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GAPeriodAverages }"></line-chart>
       </div>
       <div class="column" v-bind:id="awayTeam">
         <h2>{{awayTeam}} stats</h2><hr>
-        <line-chart title="Goals against/Game average away" v-bind:dataType="'GA Game Average'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GAAverage.trendChartData }"></line-chart>
-        <line-chart title="Goals for/Game average away" v-bind:dataType="'GF Game Average'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GFAverage.trendChartData }"></line-chart>
-        <line-chart title="Goals for/Period average away" v-bind:dataType="'GFPA'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GFPeriodAverages }"></line-chart>
-        <line-chart title="Goals against/Period average away" v-bind:dataType="'GAPA'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GAPeriodAverages }"></line-chart>
+        <line-chart title="Goals against/Game away" v-bind:dataType="'GA Game Average'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GAAverage.trendChartData }"></line-chart>
+        <line-chart title="Goals for/Game away" v-bind:dataType="'GF Game Average'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GFAverage.trendChartData }"></line-chart>
+        <line-chart title="Total goals/Game away" v-bind:dataType="'Total Goals Game'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.TotalGoalsGameAverage.trendChartData  }"></line-chart>
+        <line-chart title="Goals for/Period away" v-bind:dataType="'GFPA'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GFPeriodAverages }"></line-chart>
+        <line-chart title="Goals against/Period away" v-bind:dataType="'GAPA'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GAPeriodAverages }"></line-chart>
       </div>
     </div>
   </div>

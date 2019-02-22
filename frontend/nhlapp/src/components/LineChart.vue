@@ -73,7 +73,6 @@ export default {
     }
   },
   mounted () {
-    console.log(this.datacollection.datasets[0].data)
     console.log('Data is loaded... render chart')
     this.createChart(this.title)
   },
@@ -86,7 +85,7 @@ export default {
         label: this.title,
         data: this.dataSet.trendChartData,
         backgroundColor: [
-          'rgba(54,73,93,1)' // Blue
+          'rgba(54,73,93,0.6)' // Blue
         ],
         borderColor: [
           'rgba(255,0,12,1)' // Blue
