@@ -3,9 +3,11 @@
 import Vue from 'vue'
 import App from './App'
 import router from './router'
+import 'chart.js'
+import 'hchs-vue-charts'
 
 Vue.config.productionTip = false
-
+Vue.use(window.VueCharts)
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

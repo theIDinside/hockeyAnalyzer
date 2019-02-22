@@ -1,14 +1,35 @@
 <template>
   <div>
   <div v-if="loading">Acquiring analysis of team data & trends... please wait</div>
-  <div v-else><h1>{{homeTeam}} vs {{awayTeam}}</h1></div>
+  <div v-else>
+    <h1>
+      {{homeTeam}} vs {{awayTeam}}
+    </h1>
+    <div class="columns">
+      <div class="column" v-bind:id="homeTeam">
+        <h2>{{homeTeam}} stats</h2><hr style="border-width: 10px" class="myOwnHr">
+      <line-chart title="Goals against/Game average home" v-bind:dataType="'GA Game Average'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GAAverage.trendChartData }"></line-chart>
+      <line-chart title="Goals for/Game average home" v-bind:dataType="'GF Game Average'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GFAverage.trendChartData }"></line-chart>
+      <line-chart title="Goals for/Period average home" v-bind:dataType="'GFPA'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GFPeriodAverages }"></line-chart>
+      <line-chart title="Goals against/Period average home" v-bind:dataType="'GAPA'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GAPeriodAverages }"></line-chart>
+      </div>
+      <div class="column" v-bind:id="awayTeam">
+        <h2>{{awayTeam}} stats</h2><hr>
+        <line-chart title="Goals against/Game average away" v-bind:dataType="'GA Game Average'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GAAverage.trendChartData }"></line-chart>
+        <line-chart title="Goals for/Game average away" v-bind:dataType="'GF Game Average'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GFAverage.trendChartData }"></line-chart>
+        <line-chart title="Goals for/Period average away" v-bind:dataType="'GFPA'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GFPeriodAverages }"></line-chart>
+        <line-chart title="Goals against/Period average away" v-bind:dataType="'GAPA'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GAPeriodAverages }"></line-chart>
+      </div>
+    </div>
+  </div>
   </div>
 </template>
 
 <script>
+import LineChart from './LineChart'
 import axios from 'axios'
 import Team from './Team'
-import LineChart from './LineChart'
+// const AnalysisKeys = ['GAAverage', 'GFAverage', 'TotalGoalsGameAverage', 'GAPeriodAverages', 'GFPeriodAverages', 'PeriodWins', 'TotalGoalsPeriodAverage', 'EmptyNetLetUps', 'EmptyNetGoals']
 export default {
   name: 'Game',
   components: {
@@ -97,5 +118,16 @@ export default {
 </script>
 
 <style scoped>
-
+  hr {
+    height: 3px;
+    background-color: cornsilk;
+  }
+  h1 {
+    font-size: 25px;
+    font-weight: bold;
+  }
+  h2 {
+    font-size: 20px;
+    font-weight: lighter;
+  }
 </style>

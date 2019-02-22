@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
+    "chart.js": "^2.7.3",
     "chartjs": "^0.3.24",
     "hchs-vue-charts": "^1.2.8",
     "vue": "^2.5.2",

@@ -1,29 +1,51 @@
 <template>
-  <div></div>
+  <div>
+    <canvas v-bind:id="this.title" width="300px" height="300px"></canvas>
+  </div>
 </template>
 
 <script>
-import { Line } from 'vue-chartjs'
+import Chart from 'chart.js'
+
+function makeDataSets (arr, dt) {
+  const colors = ['rgba(54,73,93,1)', 'rgba(255,0,12,1)', 'rgba(5,255,12,1)']
+  const bgcolors = ['rgba(124,34,93, 0.3)', 'rgba(184,99,12,0.4)', 'rgba(189,255,112,0.45)']
+  let lbl = (dt === 'GFPA') ? 'Goals for/' : 'Goals against/'
+  return arr.map((pa, index) => {
+    console.log(pa.trendChartData);
+    return {
+      label: `${lbl}Period ${pa.period.toString()}`,
+      data: [...pa.trendChartData],
+      backgroundColor: [
+        bgcolors[index] // Blue
+      ],
+      borderColor: [
+        colors[index]// Blue
+      ],
+      borderWidth: 3
+    }
+  })
+}
 
 export default {
-  extends: Line,
   name: 'LineChart',
   props: {
     title: String,
-    dataSet: Object
+    dataSet: Object,
+    dataType: String
   },
   data () {
     return {
       loaded: false,
       datacollection: {
-        labels: [],
+        labels: this.dataSet.trendChartData.map((val, i) => i.toString()),
         datasets: [{
           label: this.title,
           backgroundColor: '#f87979',
           pointBackgroundColor: 'white',
           borderWidth: 1,
           pointBorderColor: '#249EBF',
-          data: []
+          data: [...this.dataSet.trendChartData]
         }],
         options: {
           scales: {
@@ -51,8 +73,59 @@ export default {
     }
   },
   mounted () {
-    if (this.loaded) {
-      this.renderChart(this.datacollection, this.options)
+    console.log(this.datacollection.datasets[0].data)
+    console.log('Data is loaded... render chart')
+    this.createChart(this.title)
+  },
+  watch: {
+    'this.dataSet': 'createChart'
+  },
+  methods: {
+    createChart () {
+      let ds = (this.dataType.includes('PA')) ? makeDataSets(this.dataSet.trendChartData, this.dataType) : [{ // one line graph
+        label: this.title,
+        data: this.dataSet.trendChartData,
+        backgroundColor: [
+          'rgba(54,73,93,1)' // Blue
+        ],
+        borderColor: [
+          'rgba(255,0,12,1)' // Blue
+        ],
+        borderWidth: 3
+      }]
+
+      let d = {
+        type: 'line',
+        data: {
+          labels: (this.dataType.includes('PA')) ? this.dataSet.trendChartData[0].trendChartData.map((v, i) => `Game ${(i + 1).toString()}`) : this.dataSet.trendChartData.map((v, i) => `Game ${(i + 1).toString()}`),
+          datasets: ds
+        },
+        options: {
+          maintainAspectRatio: false,
+          responsive: true,
+          lineTension: 1,
+          scales: {
+            yAxes: [{
+              ticks: {
+                beginAtZero: true,
+                padding: 25
+              }
+            }]
+          }
+        }
+      }
+      let ctx = document.getElementById(this.title)
+      ctx.height = 300
+      ctx.width = 300
+      const chart = new Chart(ctx, {
+        type: 'line',
+        data: d.data,
+        options: d.options
+      })
+      chart.title = chart.title
+    },
+    changeAnalyzeSpan (span) {
+
     }
   }
 }
