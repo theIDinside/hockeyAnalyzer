@@ -37,7 +37,7 @@ class GameData {
         return this.id.toString()[5] === "2";
     }
 
-    getOtherTeamName = team => (team === this.away) ? this.home : this.away;
+    getOtherTeamName(team) { return (team === this.away) ? this.home : this.away; }
 
     get totalScore() {
         return this.finalResult.away + this.finalResult.home;
@@ -76,7 +76,7 @@ class GameData {
             } else {
                 return res;
             }
-        })
+        }, 0)
     }
 
     getGoalTotalByPeriod(period) {
@@ -86,7 +86,7 @@ class GameData {
             } else {
                 return res;
             }
-        })
+        }, 0)
     }
 
     getGoalsBy(team) {

@@ -39,11 +39,10 @@ const type = (obj) => {
 };
 
 function dumpErrorStackTrace(err) {
-    let e = new Error("Fuck");
     if(err) {
         console.error(`\nError Message: ${err.message}`);
         console.error(`Stack: ${err.stack}`)
-        return`Error message: ${err.message}\n Stack: ${err.stack}`;
+        return`Error message: ${err.message}\n Stack trace: ${err.stack}`;
     }
 }
 

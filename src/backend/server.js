@@ -17,7 +17,10 @@ const {getFullTeamName} = require("../util/constants");
 
 const server = Hapi.server({
     port: 3000,
-    host: "localhost"
+    host: "localhost",
+    routes: {
+        "cors": true
+    }
 });
 
 const init = async () => {

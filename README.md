@@ -14,5 +14,10 @@ Node will be used both as web server and backend. I see no point in hooking it u
 ### Frontend
 Vue or perhaps Angular. It seems to me, that Vue is easier to get going, and since we aren't really doing to much fancy stuff, that seems more suitable for this.
 
+This is essentially the most basic look of the application. These examples show the web ui, where a list of today's 
+games is displayed, and when game is clicked on, displays some charts for averages (to begin with).
+![Example output of goals for/against per game average](example_averages.png)
+![Basic UI functionality, showing today's game and a list of averages](example_ui.png)
+
 ### Data collection
 Webscraping. We need to scrape all this data from some place. www.nhl.com/stats is a good place to start. But it doesn't provide all the data I actually owuld want. Perhaps ESPN has data available for this purpose as well. To scrape the data, we can use cheerio.js. Since the data we will be scraping, will not change in its appearance, we don't need any fancy parsers here neither, at least not to begin with.

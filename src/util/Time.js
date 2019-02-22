@@ -16,8 +16,8 @@ class Time {
                 this.secs = Number.parseInt(seconds);
             }
         } else {
-            this.mins = minutes;
-            this.secs = seconds;
+            this.mins = Number.parseInt(minutes);
+            this.secs = Number.parseInt(seconds);
         }
     }
 
