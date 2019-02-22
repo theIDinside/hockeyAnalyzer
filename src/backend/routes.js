@@ -63,7 +63,7 @@ let BetRoute = {
 
         return g;
     },
-    options: {
+    options: { // TODO: Fix so that a proper CORS header settings is set. Taking any CORS is NOT a good idea.
         cors: {
             origin: ['*'],
             additionalHeaders: ['cache-control', 'x-requested-with']
@@ -92,7 +92,7 @@ let GamesTodayRoute = {
             dumpErrorStackTrace(e);
         }
     },
-    options: {
+    options: { // TODO: Fix so that a proper CORS header settings is set. Taking any CORS is NOT a good idea.
         cors: {
             origin: ['*'],
             additionalHeaders: ['cache-control', 'x-requested-with']
@@ -121,7 +121,7 @@ let AnalyzeComingGameRoute = {
 
         }
     },
-    options: {
+    options: { // TODO: Fix so that a proper CORS header settings is set. Taking any CORS is NOT a good idea.
         cors: {
             origin: ['*'],
             additionalHeaders: ['cache-control', 'x-requested-with']
@@ -136,7 +136,7 @@ let TeamRoute = {
         let teamName = getFullTeamName(encodeURIComponent(request.params.teamName)); // for example if: http://somehostaddr.com/ANA, will retrieve some data D for team "Anaheim Mighty Ducks" (ANA).
 
     },
-    options: {
+    options: { // TODO: Fix so that a proper CORS header settings is set. Taking any CORS is NOT a good idea.
         cors: {
             origin: ['*'],
             additionalHeaders: ['cache-control', 'x-requested-with']
@@ -151,7 +151,7 @@ let DefaultRoute = {
         // here we handle the request, and send back the requested data, or requested analytical information
         return `This data gets sent to, for example the browser.`
     },
-    options: {
+    options: { // TODO: Fix so that a proper CORS header settings is set. Taking any CORS is NOT a good idea.
         cors: {
             origin: ['*'],
             additionalHeaders: ['cache-control', 'x-requested-with']
