@@ -48,7 +48,7 @@ let ScoringSummarySchema = new Schema({
     strength: {
         type: String,
         required: true,
-        enum: ['Even', 'Even Penalty Shot', 'Penalty Shot', 'Even Empty Net', 'Power Play', 'Short Handed', 'Short Handed Empty Net', "Power Play Empty Net"]
+        enum: ['Even', 'Even Penalty Shot', 'Penalty Shot', 'Even Empty Net', 'Power Play', 'Short Handed', 'Short Handed Empty Net', 'Short Handed Penalty Shot', "Power Play Empty Net", "Power Play Penalty Shot"]
     },
     scoringTeam: String,
     goalScorer: String,
@@ -223,20 +223,38 @@ async function createGameDocument(gameId, date, aTeam, hTeam, aPlayers, hPlayers
     try {
         let game = {
             gameID: Number.parseInt(gameId),
-            teams: {away: aTeam.name, home: hTeam.name},
+            teams: { 
+                away: aTeam.name, 
+                home: hTeam.name
+            },
             datePlayed: new Date(date),
             finalResult: finalResult,
             teamWon: (finalResult.home > finalResult.away ? hTeam.name : aTeam.name),
             shotsOnGoal: shotsOnGoal,
-            faceOffWins: {away: aTeam.faceoffWins, home: hTeam.faceoffWins},
+            faceOffWins: { 
+                away: aTeam.faceoffWins, 
+                home: hTeam.faceoffWins
+            },
             powerPlay: {
                 away: {goals: aTeam.ppGoals, total: aTeam.ppAttempts},
                 home: {goals: hTeam.ppGoals, totals: hTeam.ppAttempts}
             },
-            penaltyMinutes: {away: aTeam.penaltyMinutes, home: hTeam.penaltyMinutes},
-            hits: {away: aTeam.hitsMade, home: hTeam.hitsMade},
-            blockedShots: {away: aTeam.shotsBlocked, home: hTeam.shotsBlocked},
-            giveAways: {away: aTeam.giveAways, home: hTeam.giveAways},
+            penaltyMinutes: {
+                away: aTeam.penaltyMinutes, 
+                home: hTeam.penaltyMinutes
+            },
+            hits: { 
+                away: aTeam.hitsMade, 
+                home: hTeam.hitsMade
+            },
+            blockedShots: { 
+                away: aTeam.shotsBlocked, 
+                home: hTeam.shotsBlocked
+            },
+            giveAways: {
+                away: aTeam.giveAways, 
+                home: hTeam.giveAways
+            },
             playersAway: {
                 players: aPlayers.skaters.map(e => e.model), // each game, will have a subdocument included for every player who participated in the game
                 goalies: aPlayers.goalies.map(e => e.model)
@@ -252,27 +270,6 @@ async function createGameDocument(gameId, date, aTeam, hTeam, aPlayers, hPlayers
         throw err;
     }
 }
-
-function getGameByNumber(number) {
-    let it = '';
-    if(number < 1000) {
-        if(number < 100) {
-            if(number < 10)
-                id = `201802000${number}`;
-            else {
-                id = `20180200${number}`
-            }
-        } else {
-            id = `2018020${number}`
-        }
-    } else {
-        id = `201802${number}`
-    }
-    let g = Game.findBy({ 'gameID': id });
-}
-
-
-
 
 async function getLastXGames(x, team, wins=false) {
     const {dateStringify} = require("../../util/utilities");

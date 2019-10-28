@@ -1,5 +1,6 @@
 const {dateStringify} = require("../../util/utilities");
 const {Game} = require("./GameModel");
+const { daysFromDate } = require('../../util/utilities');
 const getGamesPlugin = require("./plugins/getTeamLastGames");
 
 const mongoose = require('mongoose');
@@ -56,6 +57,30 @@ GameInfoSchema.methods.getAwayTeamLastGames = function(x) {
     })
 };
 
+GameInfoSchema.statics.findTodaysGames = function(league="nhl") {
+    let l = league.toUpperCase();
+    if(l === "NHL")
+    {
+        let date_str = new Date().toLocaleString("en-us", { timeZone: "America/New_York"}); // All games are shown in Eastern Time, on www.nhl.com
+        let date = new Date(date_str);
+        let tomorrow = daysFromDate(date, 1);
+        return GameInfo.find({ datePlayed: { $gte: new Date(day), $lt: new Date(tomorrow) }}).then(res => {
+            if(res.length > 0) {
+                console.log(`Found ${res.length} games today.`);
+                res.forEach(gi => {
+                    console.log(`${gi.teams.away} vs ${gi.teams.home}`);
+                })
+                return res;
+            } else {
+                console.log("Found no games!");
+                return []
+            }
+        })
+    } else if(l === "SHL") {
+        console.log("ERROR: SHL FUNCTIONALITY NOT YET IMPLEMENTED");
+    }
+}
+80
 GameInfoSchema.statics.findGamesToday = function() {
     let d = new Date();
     if(d.getHours() <= 5) { // correct for time difference. 5-6 am Sweden, is around 8-9 LA time.
@@ -91,7 +116,7 @@ GameInfoSchema.statics.findGamesToday = function() {
 }
 
 GameInfoSchema.post("save", (gInfoDoc) => {
-   console.log(`Saved game info. ID: ${gInfoDoc.gameID} ${gInfoDoc.teams.away} vs ${gInfoDoc.teams.home}. Date played: ${dateStringify(gInfoDoc.datePlayed)}`)
+   console.log(`Saved game info. ID: ${gInfoDoc.gameID} ${gInfoDoc.teams.away} vs ${gInfoDoc.teams.home}. Date played: ${gInfoDoc.datePlayed}`)
 });
 
 let GameInfo = mongoose.model("GameInfo", GameInfoSchema);

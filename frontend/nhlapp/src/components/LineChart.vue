@@ -12,7 +12,6 @@ function makeDataSets (arr, dt) {
   const bgcolors = ['rgba(124,34,93, 0.3)', 'rgba(184,99,12,0.4)', 'rgba(189,255,112,0.45)']
   let lbl = (dt === 'GFPA') ? 'Goals for/' : 'Goals against/'
   return arr.map((pa, index) => {
-    console.log(pa.trendChartData);
     return {
       label: `${lbl}Period ${pa.period.toString()}`,
       data: [...pa.trendChartData],
@@ -67,7 +66,7 @@ export default {
             display: true
           },
           responsive: true,
-          maintainAspectRatio: false
+          maintainAspectRatio: true
         }
       }
     }
@@ -100,8 +99,8 @@ export default {
           datasets: ds
         },
         options: {
-          maintainAspectRatio: false,
-          responsive: true,
+          maintainAspectRatio: true,
+          responsive: false,
           lineTension: 1,
           scales: {
             yAxes: [{
@@ -115,7 +114,7 @@ export default {
       }
       let ctx = document.getElementById(this.title)
       ctx.height = 300
-      ctx.width = 300
+      ctx.width = 900
       const chart = new Chart(ctx, {
         type: 'line',
         data: d.data,
@@ -131,5 +130,7 @@ export default {
 </script>
 
 <style scoped>
-
+  canvas {
+    width: 900px;
+  }
 </style>

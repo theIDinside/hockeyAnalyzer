@@ -1,8 +1,6 @@
 <template>
     <div>Today's games
       <span v-if="loading">Fetching today's games...</span>
-      <br>
-      Date {{ date }}
       <ul>
         <router-link tag="li" v-for="game in gamesToday" :key="game.gameID" :to="{ name: 'Game', params: { gameID: game.gameID }}"><a>{{game.away}} vs {{game.home}}</a></router-link>
       </ul>
@@ -12,12 +10,11 @@
 <script>
 import axios from 'axios'
 export default {
-  name: 'Games',
+  name: 'GamesAtDate',
   data () {
     return {
       loading: true,
-      gamesToday: [],
-      date: null
+      gamesToday: []
     }
   },
   mounted () {
@@ -34,8 +31,6 @@ export default {
           away: gInfo.away
         }
       })
-      this.date = response.data.date
-      console.log(`Date is ${this.date}`)
       this.loading = false
     }).catch(err => {
       console.log(`Communication with backend resulted in error: ${err}`)

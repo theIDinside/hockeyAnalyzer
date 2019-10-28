@@ -48,17 +48,16 @@ class GameData {
     }
 
     getTeamGameStats(team) {
-
         return {
-            team: (team === this.away) ? this.home : this.away,
-            goals: (team === this.away) ? this.finalResult.home : this.finalResult.away,
-            shotsOnGoal: (team === this.away) ? this.shotsOnGoal.home : this.shotsOnGoal.away,
-            faceOffWins: (team === this.away) ? this.faceOffWins.home : this.faceOffWins.away,
-            powerPlay: (team === this.away) ? this.powerPlay.home : this.powerPlay.away,
-            penaltyMinutes: (team === this.away) ? this.penaltyMinutes.home : this.penaltyMinutes.away,
-            hits: (team === this.away) ? this.hits.home : this.hits.away,
-            blockedShots: (team === this.away) ? this.blockedShots.home : this.blockedShots.away,
-            giveAways: (team === this.away) ? this.giveAways.home : this.giveAways.away,
+            team: (team === this.home) ? this.home : this.away,
+            goals: (team === this.home) ? this.finalResult.home : this.finalResult.away,
+            shotsOnGoal: (team === this.home) ? this.shotsOnGoal.home : this.shotsOnGoal.away,
+            faceOffWins: (team === this.home) ? this.faceOffWins.home : this.faceOffWins.away,
+            powerPlay: (team === this.home) ? this.powerPlay.home : this.powerPlay.away,
+            penaltyMinutes: (team === this.home) ? this.penaltyMinutes.home : this.penaltyMinutes.away,
+            hits: (team === this.home) ? this.hits.home : this.hits.away,
+            blockedShots: (team === this.home) ? this.blockedShots.home : this.blockedShots.away,
+            giveAways: (team === this.home) ? this.giveAways.home : this.giveAways.away,
         }
 
     }
@@ -98,6 +97,39 @@ class GameData {
 
     get summary() {
         return this.scoringSummary;
+    }
+
+    get winner() {
+        return (this.finalResult.home > this.finalResult.away) ? this.home : this.away;
+    }
+
+    get loser() {
+        return (this.finalResult.home < this.finalResult.away) ? this.home : this.away;
+    }
+
+    get periods() {
+        let p1 = this.scoringSummary.filter((g, i) => g.getScoringPeriod() === 1).reduce((res, goal) => {
+            if(goal.getScoringTeam() === this.home) {
+                return {home: res.home + 1, away: res.away }
+            } else {
+                return {home: res.home, away: res.away + 1 }
+            }
+        }, {home: 0, away: 0});
+        let p2 = this.scoringSummary.filter((g, i) => g.getScoringPeriod() === 2).reduce((res, goal) => {
+            if(goal.getScoringTeam() === this.home) {
+                return {home: res.home + 1, away: res.away }
+            } else {
+                return {home: res.home, away: res.away + 1 }
+            }
+        }, {home: 0, away: 0});;
+        let p3 = this.scoringSummary.filter((g, i) => g.getScoringPeriod() === 3).reduce((res, goal) => {
+            if(goal.getScoringTeam() === this.home) {
+                return {home: res.home + 1, away: res.away }
+            } else {
+                return {home: res.home, away: res.away + 1 }
+            }
+        }, {home: 0, away: 0});;
+        return [p1, p2, p3];
     }
 }
 

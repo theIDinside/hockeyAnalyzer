@@ -26,10 +26,14 @@ class Goal {
                 return "Penalty Shot";
             case "SH":
                 return "Short Handed";
+            case "SH-PS":
+                return "Short Handed Penalty Shot";
             case "SH-EN":
                 return "Short Handed Empty Net";
             case "PP-EN":
                 return "Power Play Empty Net";
+            case "PP-PS":
+                return "Power Play Penalty Shot"
         }
     }
 

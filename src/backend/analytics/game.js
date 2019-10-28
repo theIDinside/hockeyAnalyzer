@@ -128,4 +128,21 @@ function EmptyNetLetUps(team, games) {
     }
 }
 
-module.exports = { GFGameAverage, GAGameAverage, GGameAverage, EmptyNetScoring, EmptyNetLetUps };
+const lastXGameStats = (team, games) =>
+    games.map(g => g.toGameData())
+            .map(gd => {
+                let key = (gd.home === team) ? 'home' : 'away';
+                let key2 = (key === "home") ? "away" : "home";
+                return {
+                    at: key,
+                    vs: (key === "home") ? gd.away : gd.home,
+                    date: gd.date,
+                    shots: gd.shotsOnGoal,
+                    score: { team: this.finalResult[key], otherTeam: this.finalResult[key2] },
+                    scorePct: {team: this.shotsOnGoal[key] / this.finalResult[key], otherTeam: this.shotsOnGoal[key2] / this.finalResult[key2] },
+                    periods: gd.periods,
+                    won: (team === gd.winner)
+                }
+            });
+
+module.exports = { GFGameAverage, GAGameAverage, GGameAverage, EmptyNetScoring, EmptyNetLetUps, lastXGameStats };

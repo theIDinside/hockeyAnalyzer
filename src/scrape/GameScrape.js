@@ -8,9 +8,29 @@ const {Time, MakeTime} = require('../util/Time');
 
 
 const getGamesListItem = (dateString) => `nhl-scores__${dateString}`;
-const getGamePageURL = (gameNumber) => `https://www.nhl.com/gamecenter/201802${gameNumber}`;
-const getGameSummaryURL = (gameID) => `http://www.nhl.com/scores/htmlreports/20182019/GS02${removePrefixOf(gameID.toString(), 6)}.HTM`;
 
+
+const SEASON = process.env.SEASON || "19/20";
+
+const getGamePageURL = (gameID) => {
+    return `https://www.nhl.com/gamecenter/${gameID}`;
+}
+
+function getSeasonString() {    
+    let start = Number.parseInt(SEASON.split("/")[0]);
+    let end = Number.parseInt(SEASON.split("/")[1]);
+    let result = `20${start}20${end}`;
+    return result;
+}
+
+/**
+ * Returns parsed game summary URL for game with game id gameID
+ * @param {Number} gameID The id of the game to retrieve summary URL for.
+ * @return {String} Returns full URL to summary report of game.
+ */
+const getGameSummaryURL = (gameID) => {
+    return `http://www.nhl.com/scores/htmlreports/${getSeasonString()}/GS02${removePrefixOf(gameID.toString(), 6)}.HTM`;
+}
 
 /// This function, retrieves from the site, the games for the coming 6 days (including the provided date in the argument. This is I guess somehow, what the site prefetches or something.)
 async function getGameIDsAtDate(date) {
@@ -47,13 +67,12 @@ function getGameIDsAtDateHTML(date, htmlData) {
 }
 
 /**
- * 
+ * Returns a scoring summary that contains the HTML data from the summary report. This can then be translated into a MongoDB model, using the .model method. Notice that it uses the getter
+ * so no () is used at the end of that method call.
  * @param { string } summaryReportURL  
- * @param { string } season 
  * @returns { Promise<ScoringSummary> }
  */
-async function scrapeGameSummaryReport(summaryReportURL, season="20182019") {
-    // let summaryURL = `http://www.nhl.com/scores/htmlreports/${season}/GS${gameID}.HTM`
+async function scrapeGameSummaryReport(summaryReportURL) {
     return axios(summaryReportURL).then(res => {
         l("Summary report data downloaded. Begin scraping...");
         return new ScoringSummary(res.data);

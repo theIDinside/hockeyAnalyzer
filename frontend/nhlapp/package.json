@@ -21,7 +21,8 @@
     "vue": "^2.5.2",
     "vue-chartjs": "^3.4.0",
     "vue-router": "^3.0.2",
-    "vue2-frappe": "^1.0.28"
+    "vue2-frappe": "^1.0.28",
+    "vuetify": "^1.5.2"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",

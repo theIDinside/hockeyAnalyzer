@@ -5,6 +5,7 @@ const {GameInfo} = require("../models/GameInfoModel");
 
 const GameAPI = require("./game");
 const PeriodAPI = require("./period");
+const SeasonAPI = require("./season");
 
 const DefaultPredicate = team => {
     return {$or: [{"teams.home": team}, {"teams.away": team}]};
@@ -22,6 +23,14 @@ const LossPredicate = team => {
 const WinsPredicate = team => {
     return { "teamWon": team };
 };
+
+const HomeGamesPredicate = team => {
+    return { "teams.home": team}
+}
+
+const AwayGamesPredicate = team => {
+    return { "teams.away": team}
+}
 
 /**
  * @param x {Number}
@@ -91,44 +100,10 @@ async function reqGameInfo(gameID) {
     })
 }
 
-/* async function getGamesToday() {
-    let d = new Date();
-    if(d.getHours() <= 5) { // correct for time difference. 5-6 am Sweden, is around 8-9 LA time.
-        d.setUTCDate(d.getUTCDay() - 1);
-        let search = dateStringify(d);
-        return GameInfo.find({datePlayed: new Date(search)}).then(res => {
-            if(res.length > 0) {
-                console.log(`Found ${res.length} games today.`);
-                res.forEach(gi => {
-                    console.log(`${gi.teams.away} vs ${gi.teams.home}`);
-                })
-            return res;
-            } else {
-                console.log("Found no games!");
-                return []
-            }
-        })
-    } else {
-        let search = dateStringify(d);
-        return GameInfo.find({datePlayed: new Date(search)}).then(res => {
-            if(res.length > 0) {
-                console.log(`Found ${res.length} games today.`);
-                res.forEach(gi => {
-                    console.log(`${gi.teams.away} vs ${gi.teams.home}`);
-                })
-                return res;
-            } else {
-                console.log("Found no games!");
-                return []
-            }
-        })
-    }
-}
-*/
 async function getGamesToday() {
    return GameInfo.findGamesToday();
 }
 
-const API = { ...GameAPI, ...PeriodAPI, getLastXGamesWonBy, getLastXGamesLostBy, getLastXGamesPlayedBy, reqGameInfo, getGamesToday};
+const API = { ...GameAPI, ...PeriodAPI, getLastXGamesWonBy, getLastXGamesLostBy, getLastXGamesPlayedBy, reqGameInfo, getGamesToday, ...SeasonAPI};
 
 module.exports =  { API };

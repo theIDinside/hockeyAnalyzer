@@ -7,7 +7,7 @@ const req = require('request-promise');
 let axios = require('axios');
 const puppeteer = require('puppeteer');
 
-async function getHTMLData(url) {
+async function getHTMLData(url) {   
     let d = new Date("2019-01-12");
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
