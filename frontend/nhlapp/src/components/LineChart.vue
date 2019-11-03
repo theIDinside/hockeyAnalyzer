@@ -1,6 +1,6 @@
 <template>
   <div>
-    <canvas v-bind:id="this.title" width="300px" height="300px"></canvas>
+    <canvas v-bind:id="this.title+'_'+this.team" width="300px" height="300px"></canvas>
   </div>
 </template>
 
@@ -30,6 +30,7 @@ export default {
   name: 'LineChart',
   props: {
     title: String,
+    team: String,
     dataSet: Object,
     dataType: String
   },
@@ -112,7 +113,7 @@ export default {
           }
         }
       }
-      let ctx = document.getElementById(this.title)
+      let ctx = document.getElementById(this.title+'_'+this.team)
       ctx.height = 300
       ctx.width = 900
       const chart = new Chart(ctx, {

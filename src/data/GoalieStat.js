@@ -17,7 +17,13 @@ class GoalieStat {
         let [ts, tg] = shotsTotal.split("–");
         this.savesTotal = ts;
         this.shotsTotal = tg;
-        this.savePct = savePct;
+        if(savePct.includes("–") || savePct === "–" || savePct === " " || savePct.length === 0) {
+            console.log("Save pct is set to nothing. Setting it to 0")
+            this.savePct = "0";
+        } else {
+            console.log("Save pct is === " + savePct)
+            this.savePct = savePct;
+        }
         this.pim = pim;
         this.toi = new Time(...toi.split(":"));
     }

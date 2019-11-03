@@ -140,7 +140,8 @@ async function scrapePlayerTotals(htmlData) {
                     .filter((_, ELEM) => gTotalFilter(nav(ELEM).attr("data-visible")))
                     .map((index, td) => {
                         {
-                            if (nav(td).text() === " " || nav(td).text().length === 0)
+                            let pct = nav(td).text().trim();
+                            if (pct === " " || pct.length === 0 || pct === "–")
                                 return "0";
                             return nav(td).text().trim();
                         }
@@ -180,7 +181,8 @@ async function scrapePlayerTotals(htmlData) {
                     .filter((_, ELEM) => gTotalFilter(nav(ELEM).attr("data-visible")))
                     .map((index, td) => {
                         {
-                            if (nav(td).text() === " " || nav(td).text().length === 0)
+                            let pct = nav(td).text().trim();
+                            if (pct === " " || pct.length === 0 || pct === "–")
                                 return "0";
                             return nav(td).text().trim();
                         }

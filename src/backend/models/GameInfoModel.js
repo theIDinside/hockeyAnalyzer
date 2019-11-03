@@ -63,24 +63,29 @@ GameInfoSchema.statics.findTodaysGames = function(league="nhl") {
     {
         let date_str = new Date().toLocaleString("en-us", { timeZone: "America/New_York"}); // All games are shown in Eastern Time, on www.nhl.com
         let date = new Date(date_str);
+
         let tomorrow = daysFromDate(date, 1);
-        return GameInfo.find({ datePlayed: { $gte: new Date(day), $lt: new Date(tomorrow) }}).then(res => {
+        tomorrow.setUTCHours(0); // no games start (usually, i have no way of knowing at this point) at 00:00 midnight. So the day ends there.
+        let midnight = date.toISOString().split("T")[0];
+        let d = new Date(midnight);
+        return GameInfo.find({ datePlayed: { $gte: d, $lt: tomorrow }}).then(res => {
             if(res.length > 0) {
                 console.log(`Found ${res.length} games today.`);
                 res.forEach(gi => {
                     console.log(`${gi.teams.away} vs ${gi.teams.home}`);
-                })
+                });
                 return res;
             } else {
-                console.log("Found no games!");
+                console.log(`Found no games between ${date} and ${tomorrow}`);
                 return []
             }
         })
     } else if(l === "SHL") {
         console.log("ERROR: SHL FUNCTIONALITY NOT YET IMPLEMENTED");
+        return [];
     }
 }
-80
+
 GameInfoSchema.statics.findGamesToday = function() {
     let d = new Date();
     if(d.getHours() <= 5) { // correct for time difference. 5-6 am Sweden, is around 8-9 LA time.

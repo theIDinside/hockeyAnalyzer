@@ -63,7 +63,7 @@ function daysFromDate(date, amount) {
     }
   
     return d;
-  }
+}
 
 module.exports = {
     anyOf: (someValue, someValueArray) => {

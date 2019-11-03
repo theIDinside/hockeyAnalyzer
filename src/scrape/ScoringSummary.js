@@ -13,6 +13,7 @@ class ScoringSummary {
             txt = txt.split("Game")[0];
             let tmp = txt.split(" ");
             txt = tmp[tmp.length-1];
+            console.log(`Text data for visitor: ${txt}`);
             return getFullTeamName(txt);
         })[0];
         this.home = elQuery('table#Home').children().children().filter((i, _) => i > 1).children().map((idx, e) => {
@@ -20,6 +21,7 @@ class ScoringSummary {
             txt = txt.split("Game")[0];
             let tmp = txt.split(" ");
             txt = tmp[tmp.length-1];
+            console.log(`Text data for home: ${txt}`);
             return getFullTeamName(txt);
         })[0];
         this.summary = elQuery('tbody').children().filter((i, e) => i === 3).map((index, row) =>
@@ -43,10 +45,12 @@ class ScoringSummary {
 
     get finalResult() {
         return this.summary.reduce((result, goal) => {
-            if(goal.getScoringTeam() === this.away) {
+            if(teams[goal.getScoringTeam()] === this.away) {
                 return { away: result.away+1, home: result.home }
-            } else {
+            } else if(teams[goal.getScoringTeam()] === this.home) {
                 return { away: result.away, home: result.home + 1}
+            } else {
+                console.log(`The scoring team reported is ${goal.getScoringTeam()}, while teams playing are: Home: ${this.home}. Away: ${this.away}`);
             }
         }, { away: 0, home: 0 });
     }

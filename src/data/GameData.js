@@ -69,13 +69,14 @@ class GameData {
         if(period > 5) {
             throw new Error(`You can only provide 1, 2, 3 or 4 (OT) as periods. If you provide 5, you are asking for data of entire game. You provided ${period}`);
         }
-        return this.scoringSummary.reduce((res, goal) => {
-            if(goal.getScoringTeam() === team && goal.getScoringPeriod() === period) {
+        let result = this.scoringSummary.reduce((res, goal) => {
+            if(goal.getScoringTeamFullName() === team && goal.getScoringPeriod() === period) {
                 return res + 1;
             } else {
                 return res;
             }
-        }, 0)
+        }, 0);
+        return result;
     }
 
     getGoalTotalByPeriod(period) {
@@ -109,26 +110,29 @@ class GameData {
 
     get periods() {
         let p1 = this.scoringSummary.filter((g, i) => g.getScoringPeriod() === 1).reduce((res, goal) => {
-            if(goal.getScoringTeam() === this.home) {
+            if(goal.getScoringTeamFullName() === this.home) {
                 return {home: res.home + 1, away: res.away }
             } else {
                 return {home: res.home, away: res.away + 1 }
             }
         }, {home: 0, away: 0});
         let p2 = this.scoringSummary.filter((g, i) => g.getScoringPeriod() === 2).reduce((res, goal) => {
-            if(goal.getScoringTeam() === this.home) {
+            if(goal.getScoringTeamFullName() === this.home) {
                 return {home: res.home + 1, away: res.away }
             } else {
                 return {home: res.home, away: res.away + 1 }
             }
         }, {home: 0, away: 0});;
         let p3 = this.scoringSummary.filter((g, i) => g.getScoringPeriod() === 3).reduce((res, goal) => {
-            if(goal.getScoringTeam() === this.home) {
+            if(goal.getScoringTeamFullName() === this.home) {
                 return {home: res.home + 1, away: res.away }
             } else {
                 return {home: res.home, away: res.away + 1 }
             }
-        }, {home: 0, away: 0});;
+        }, {home: 0, away: 0});
+        console.log(`Score: ${this.home}:${p1.home} - ${this.away}:${p1.away}`)
+        console.log(`Score: ${this.home}:${p2.home} - ${this.away}:${p2.away}`)
+        console.log(`Score: ${this.home}:${p3.home} - ${this.away}:${p3 .away}`)
         return [p1, p2, p3];
     }
 }

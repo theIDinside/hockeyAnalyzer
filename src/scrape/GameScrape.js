@@ -69,7 +69,7 @@ function getGameIDsAtDateHTML(date, htmlData) {
 /**
  * Returns a scoring summary that contains the HTML data from the summary report. This can then be translated into a MongoDB model, using the .model method. Notice that it uses the getter
  * so no () is used at the end of that method call.
- * @param { string } summaryReportURL  
+ * @param { string } summaryReportURL  pp
  * @returns { Promise<ScoringSummary> }
  */
 async function scrapeGameSummaryReport(summaryReportURL) {

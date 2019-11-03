@@ -426,7 +426,11 @@ async function processCalendar(data) {
                     UTIL.l(`Found ${games.length} games`);
                     UTIL.l(`Start scraping at ${games[0].gameID}`);
                     let gID = (games[0] === undefined || games[0] === null) ? 2019020001 : games[0].gameID;
-                    scrapeGames(gID+1, null).then(res => {
+                    gID += 1;
+                    let last_game_played = null;
+                    let games_today = GameInfo.findTodaysGames("nhl");
+                    let end_id = games_today[0].gameID - 1;
+                    scrapeGames(gID, end_id).then(res => {
                         UTIL.l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
                         db.close();
                     });

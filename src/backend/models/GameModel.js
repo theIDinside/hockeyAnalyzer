@@ -48,7 +48,7 @@ let ScoringSummarySchema = new Schema({
     strength: {
         type: String,
         required: true,
-        enum: ['Even', 'Even Penalty Shot', 'Penalty Shot', 'Even Empty Net', 'Power Play', 'Short Handed', 'Short Handed Empty Net', 'Short Handed Penalty Shot', "Power Play Empty Net", "Power Play Penalty Shot"]
+        enum: ['Even', 'Even Penalty Shot', 'Penalty Shot', 'Even Empty Net', 'Power Play', 'Short Handed', 'Short Handed Empty Net', 'Short Handed Penalty Shot', "Power Play Empty Net", "Power Play Penalty Shot", "Shootout"]
     },
     scoringTeam: String,
     goalScorer: String,
@@ -165,7 +165,7 @@ GameModelSchema.methods.getTeamStats = function(){
 
 
 GameModelSchema.methods.toGameData = function(){
-    return new GameData(this.gameID, this.teams.away, this.teams.home, this.datePlayed, this.finalResult, this.shotsOnGoal, this.faceOffWins, this.powerPlay, this.penaltyMinutes, this.hits, this.blockedShots, this.giveAways, this.scoringSummary.map(g => toGoalData(g)));
+    return new GameData(this.gameID, this.teams.away, this.teams.home, this.datePlayed, this.finalResult, this.shotsOnGoal, this.faceOffWins, this.powerPlay, this.penaltyMinutes, this.hits, this.blockedShots, this.giveAways, this.scoringSummary.map(g => g.toGoal()));
 };
 
 

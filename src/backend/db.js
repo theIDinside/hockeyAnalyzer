@@ -10,7 +10,7 @@ const mongoDBHost = () => {
     const pw = "season2018"; // so this will be what the end user uses to connect.
     const remoteNHLDB = `mongodb://${user}:${pw}@ds125945.mlab.com:25945/nhl`;
     if(process.env.DEBUGDB === "ON")
-        return `mongodb://localhost/nhl`;
+        return `mongodb://localhost/nhltest`;
     else
         return remoteNHLDB;
 };

@@ -1,84 +1,16 @@
 <template>
   <div>
   <div v-if="loading">Acquiring analysis of team data & trends... please wait</div>
-  <div v-else>
+  <div v-if="!loading">
     <h1>
       {{awayTeam}} vs {{homeTeam}}
     </h1>
     <div class="columns">
-      <div class="column" v-bind:id="awayTeam">
-        <h2>{{awayTeam}} stats</h2><hr>
-        <v-expansion-panel>
-          <v-expansion-panel-content :key="GA" expand-icon="mdi-menu-down">
-            <div slot="header"><h2>Game average stats</h2></div>
-            <v-card>
-              <v-card-title>Goals against/game average</v-card-title>
-              <line-chart title="Goals against/Game away" v-bind:dataType="'GA Game Average'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GAAverage.trendChartData }"></line-chart>
-            </v-card>
-            <v-card>
-              <v-card-title>Goals for/game average</v-card-title>
-              <line-chart title="Goals for/Game away" v-bind:dataType="'GF Game Average'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GFAverage.trendChartData }"></line-chart>
-            </v-card>
-            <v-card>
-              <v-card-title>Total goals/game average</v-card-title>
-              <line-chart title="Total goals/Game away" v-bind:dataType="'Total Goals Game'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.TotalGoalsGameAverage.trendChartData  }"></line-chart>
-            </v-card>
-          </v-expansion-panel-content>
-          <v-expansion-panel-content :key="PA"  expand-icon="mdi-menu-down">
-            <div slot="header"><h2>Period average stats</h2></div>
-            <v-card>
-              <v-card-title>Goals for/period average</v-card-title>
-              <line-chart title="Goals for/Period away" v-bind:dataType="'GFPA'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GFPeriodAverages }"></line-chart>
-            </v-card>
-            <v-card>
-              <v-card-title>Goals against/period average</v-card-title>
-              <line-chart title="Goals against/Period away" v-bind:dataType="'GAPA'" v-bind:dataSet="{ trendChartData: this.awayAnalysis.GAPeriodAverages }"></line-chart>
-            </v-card>
-          </v-expansion-panel-content>
-          <v-expansion-panel-content :key="GS" expand-icon="mdi-menu-down">
-            <div slot="header"><h2>Last games</h2></div>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
+      <div class="column">
+        <game-team :analysis="awayAnalysis" :team="awayTeam"></game-team>
       </div>
-
-      <div class="column" v-bind:id="homeTeam">
-        <h2>{{homeTeam}} stats</h2><hr style="border-width: 10px" class="myOwnHr">
-        <v-expansion-panel>
-          <v-expansion-panel-content :key="GA" expand-icon="mdi-menu-down">
-            <div slot="header"><h2>Game average stats</h2></div>
-            <v-card>
-              <v-card-title>Goals against/game average</v-card-title>
-              <line-chart title="Goals against/Game home" v-bind:dataType="'GA Game Average'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GAAverage.trendChartData }"></line-chart>
-            </v-card>
-            <v-card>
-              <v-card-title>Goals for/game average</v-card-title>
-              <line-chart title="Goals for/Game home" v-bind:dataType="'GF Game Average'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GFAverage.trendChartData }"></line-chart>
-            </v-card>
-            <v-card>
-              <v-card-title>Total goals/game average</v-card-title>
-              <line-chart title="Total goals/Game home" v-bind:dataType="'Total Goals Game'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.TotalGoalsGameAverage.trendChartData  }"></line-chart>
-            </v-card>
-          </v-expansion-panel-content>
-          <v-expansion-panel-content :key="PA"  expand-icon="mdi-menu-down">
-            <div slot="header"><h2>Period average stats</h2></div>
-            <v-card>
-              <v-card-title>Goals for/period average</v-card-title>
-              <line-chart title="Goals for/Period home" v-bind:dataType="'GFPA'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GFPeriodAverages }"></line-chart>
-            </v-card>
-            <v-card>
-              <v-card-title>Goals against/period average</v-card-title>
-              <line-chart title="Goals against/Period home" v-bind:dataType="'GAPA'" v-bind:dataSet="{ trendChartData: this.homeAnalysis.GAPeriodAverages }"></line-chart>
-            </v-card>
-          </v-expansion-panel-content>
-          <v-expansion-panel-content :key="GS" expand-icon="mdi-menu-down">
-            <div slot="header"><h2>Last games</h2></div>
-
-          </v-expansion-panel-content>
-          <v-expansion-panel-content :key="GS" expand-icon="mdi-menu-down">
-            <div slot="header"><h2>Bets</h2></div>
-
-          </v-expansion-panel-content>
-        </v-expansion-panel>
+      <div class="column">
+        <game-team :analysis="homeAnalysis" :team="homeTeam"></game-team>
       </div>
     </div>
   </div>
@@ -89,17 +21,8 @@
 import LineChart from './LineChart'
 import axios from 'axios'
 import Team from './Team'
+import GameTeam from './GameTeam'
 
-/*
-const dateString = (date) => {
-  let res = date.toLocaleDateString()
-  let restmp = res.split('-')
-  let y = Number.parseInt(restmp[0])
-  let mNum = Number.parseInt(restmp[1])
-  let dNum = Number.parseInt(restmp[2])
-  return `${y}-${(mNum < 10) ? `0${mNum}` : mNum}-${(dNum < 10) ? `0${dNum}` : dNum}`
-}
-*/
 function abbreviateName (team) {
   switch (team) {
     case 'Anaheim Ducks':
@@ -171,6 +94,7 @@ function abbreviateName (team) {
 export default {
   name: 'Game',
   components: {
+    GameTeam,
     Team,
     LineChart
   },
@@ -189,10 +113,14 @@ export default {
   mounted () {
     this.gameID = this.$route.params.gameID
     axios(`${this.$API}/games/${this.$route.params.gameID}`).then(res => {
+      console.log('Hello world')
       this.homeAnalysis = res.data.homeTeamAnalysis
+      console.log(`Home team : ${this.homeAnalysis.team}`)
       this.awayAnalysis = res.data.awayTeamAnalysis
+      console.log(`Home team : ${this.awayAnalysis.team}`)
       this.homeTeam = this.homeAnalysis.team
       this.awayTeam = this.awayAnalysis.team
+      console.log(`Goals against period average for home team: ${this.homeAnalysis.GAPeriodAverages[0].trendChartData}`)
 
       // first, get the gameInfo data, that is linked to gameID.
       // then, populate team names & date played.

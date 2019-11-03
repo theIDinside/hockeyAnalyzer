@@ -5,8 +5,14 @@ class Goal {
     constructor(goalNumber, period, time, strength, scoringTeam, goalScorer, assist1, assist2) {
         this.goalNumber = goalNumber;
         this.period = period;
-        this.time = MakeTime(time);
         this.strength = strength;
+        if(period === "SO")
+            this.strength = "SO";
+        if(period === "SO") {
+            this.time = MakeTime("65:00");
+        } else {
+            this.time = MakeTime(time);
+        }
         this.scoringTeam = scoringTeam;
         this.goalScorer = goalScorer;
         this.assists = [assist1, assist2];
@@ -33,7 +39,9 @@ class Goal {
             case "PP-EN":
                 return "Power Play Empty Net";
             case "PP-PS":
-                return "Power Play Penalty Shot"
+                return "Power Play Penalty Shot";
+            case "SO":
+                return "Shootout";
         }
     }
 
@@ -42,10 +50,9 @@ class Goal {
         for (let i in this.assists) {
             a[i] = this.assists[i].split("(")[0];
         }
-
         return {
             goal: this.number,
-            period: (this.period === "OT") ? 4 : Number.parseInt(this.period),
+            period: this.getScoringPeriod(),
             time: this.time.model,
             strength: this.translateStrength(),
             scoringTeam: this.getScoringTeam(),
@@ -57,12 +64,17 @@ class Goal {
     getScoringPeriod() {
         if (this.period === "OT")
             return 4;
+        else if(this.period === "SO")
+            return 5;
         else
             return Number.parseInt(this.period)
     }
+
+    isRegularTimeGoal() {
+        return this.getScoringPeriod() < 4;
+    }
+
     isGood() {
-        if (this.period === "SO") // if it's a shootout goal in shootout OT, then we wont be trying to analyze the data. Therefore the goal will be no good for our purposes
-            return false;
         return this.goalNumber !== "-";
     }
 
@@ -92,6 +104,10 @@ class Goal {
 
     getScoringTeam() {
         return this.scoringTeam;
+    }
+
+    getScoringTeamFullName() {
+        return teams[this.scoringTeam];
     }
 }
 

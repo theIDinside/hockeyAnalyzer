@@ -77,6 +77,7 @@ async function getLastXGamesPlayedBy(x, team) {
     let dateSort = {datePlayed: -1}; // descending sort
     return Game.find(DefaultPredicate(team)).sort(dateSort).limit(x).then((games) => {
         if(games.length > 0) {
+            console.log(`Got ${games.length} games played by ${team}. Returning these games for analysis.`);
             return games;
         } else {
             throw new Error(`Could not find any games with team ${team}`);
@@ -90,18 +91,19 @@ async function getLastXGamesPlayedBy(x, team) {
  */
 async function reqGameInfo(gameID) {
     return GameInfo.find({gameID: gameID}).then((gi) => {
-        if(gi.length > 0)
+        if(gi.length > 0) {
+            console.log(`Game id: ${gi[0].gameID}. Teams: ${gi[0].teams.away} - ${gi[0].teams.home}`)
             return {
                 gameID: gi[0].gameID,
                 teams: gi[0].teams,
             }
-        else
+        } else
             throw new Error(`No game with gameID ${gameID} was found.`);
     })
 }
 
 async function getGamesToday() {
-   return GameInfo.findGamesToday();
+   return GameInfo.findTodaysGames();
 }
 
 const API = { ...GameAPI, ...PeriodAPI, getLastXGamesWonBy, getLastXGamesLostBy, getLastXGamesPlayedBy, reqGameInfo, getGamesToday, ...SeasonAPI};

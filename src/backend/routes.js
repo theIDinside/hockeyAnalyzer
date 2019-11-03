@@ -39,13 +39,20 @@ async function queryGamesPlayed(team, span) {
  */
 async function FullAnalysis(team, isHome) {
     let gameSpan = 10;
+    const FULL_SEASON = 81;
     try {
-        return await Promise.all([API.getLastXGamesPlayedBy(gameSpan*2, team), API.getLastXGamesWonBy(gameSpan*2, team), API.getLastXGamesLostBy(gameSpan*2, team)]).then(allGames => {
-        let [games, wonGames, lostGames] = allGames; // lostGames, used to analyze how often they let up a goal, into empty net, when they lose.
+        return await Promise.all([API.getLastXGamesPlayedBy(gameSpan*2, team),
+            API.getLastXGamesWonBy(gameSpan*2, team),
+            API.getLastXGamesLostBy(gameSpan*2, team),
+            API.getLastXGamesWonBy(FULL_SEASON, team)]).then(allGames => {
+        let [games, wonGames, lostGames, empty_net_games] = allGames; // lostGames, used to analyze how often they let up a goal, into empty net, when they lose.
             games = games.reverse();
             wonGames = wonGames.reverse();
             lostGames = lostGames.reverse();
-            return {
+
+
+
+            let res = {
                 team: team,
                 GAAverage: API.GAGameAverage(team, games),
                 GFAverage: API.GFGameAverage(team, games),
@@ -54,13 +61,15 @@ async function FullAnalysis(team, isHome) {
                 GFPeriodAverages: [...Array(4).keys()].filter(i => i > 0).map(period => API.GFPeriodAverage(team, games, period)),
                 PeriodWins: [...Array(4).keys()].filter(i => i > 0).map(period => API.PeriodWins(team, games, period)),
                 TotalGoalsPeriodAverage: [...Array(4).keys()].filter(i => i > 0).map(period => API.GPeriodAverage(team, games, period)),
-                EmptyNetGoals: API.EmptyNetScoring(team, wonGames),
+                EmptyNetGoals: API.EmptyNetScoring(team, empty_net_games),
                 EmptyNetLetUps: API.EmptyNetLetUps(team, lostGames),
                 lastGames: API.lastXGameStats(team, games.filter((g, i) => i >= (gameSpan*2)-5)),
                 passed: true
-            }
+            };
+            // console.log(`Returning analysis for team: ${res.team}. GFA: ${res.GFAverage.average}. GAA: ${res.GAAverage.average}.GAPA len ${res.GAPeriodAverages.length} GAPA: ${[...res.GAPeriodAverages[0].trendChartData]} `);
+            return res;
         }).catch(err => {
-            console.log(`Error: ${err}`);
+            console.log(`Error in full analysis function: ${err}\n ${err.stack}`);
         })
     } catch (err) {
         const {dumpErrorStackTrace} = require("../util/utilities")
@@ -105,8 +114,7 @@ let GamesTodayRoute = {
     handler: async (request, h) => {
         // TODO: this function is not yet defined.
         try {
-            let d = '2019-03-31';
-            let date = new Date(d);
+            let date = new Date();
             let games = await API.getGamesToday(date);
             let result = games.map(gameInfo => {
                 return {
@@ -147,7 +155,7 @@ let AnalyzeComingGameRoute = {
                 }
             });
         } catch (e) {
-
+            console.log("YOOOOOOOOO")
         }
     },
     options: { // TODO: Fix so that a proper CORS header settings is set. Taking any CORS is NOT a good idea.

@@ -1,6 +1,7 @@
 'use strict';
 const {Game} = require("../models/GameModel");
-
+const { GameData } = require("../../data/GameData");
+let value = 0;
 /// ------ PERIOD AVERAGES & ANALYSIS ------
 
 
@@ -13,12 +14,14 @@ const {Game} = require("../models/GameModel");
  */
 function GFPeriodAverage(team, games, period) {
     // oh the lovely universe of functional programming.
-    const span = games.length / 2;
+    const span = Math.floor(games.length / 2);
     let trendChartData = [...Array(span).keys()]
         .map((v, index) =>
             games
                 .filter((g, i) => i < (span+index+1) && i > index)
-                .map(g => g.toGameData().getGoalsByPeriod(team, period))
+                .map(g => {
+                    return g.toGameData().getGoalsByPeriod(team, period)
+                })
                 .reduce((res, goals) => res + goals, 0) / span);
     return {
         games: span,
@@ -38,24 +41,30 @@ function GFPeriodAverage(team, games, period) {
  * @return {{average: Number, games: Number, period: Number}}
  */
 function GAPeriodAverage(team, games, period) {
-    const span = games.length / 2;
+    const span = Math.floor(games.length / 2);
     let trendChartData = [...Array(span).keys()]
         .map((v, index) =>
             games
                 .filter((g, i) => i < (span+index+1) && i > index)
                 .map(g => g.toGameData())
-                .map(gd => gd.getGoalsByPeriod(gd.getOtherTeamName(team), period))
+                .map(gd => {
+                    let goals = gd.getGoalsByPeriod(gd.getOtherTeamName(team), period);
+                    console.log(`Goals against this period ${period}: ${goals}`);
+                    return goals;
+                })
                 .reduce((res, goals) => res + goals, 0) / span);
-    return {
+    console.log(`Sending back analysis for GAPeriodAverage. Span ${span}. Period: ${period}. Trend chart data: ${[...trendChartData]}`)
+    let res = {
         games: span,
         period: period,
-        trendChartData: trendChartData,
+        trendChartData: [...trendChartData],
         average: games.filter((g, i) => i >= span).map(g => g.toGameData())
             .map(gameData => {
                 return gameData.getGoalsByPeriod(gameData.getOtherTeamName(team), period)
             })
             .reduce((res, goals) => res + goals, 0) / span
-    }
+    };
+    return res;
 }
 
 /**
@@ -66,7 +75,7 @@ function GAPeriodAverage(team, games, period) {
  * @return {{average: Number, games: Number, period: Number}}
  */
 function GPeriodAverage(team, games, period) {
-    const span = games.length / 2;
+    const span = Math.floor(games.length / 2);
     let trendChartData = [...Array(span).keys()]
         .map((v, index) =>
             games
@@ -91,7 +100,7 @@ function GPeriodAverage(team, games, period) {
  * @return {{wins: Boolean[], period: Number, games: Number, pct: Number}}
  */
 function PeriodWins(team, games, period) {
-    const span = games.length / 2;
+    const span = Math.floor(games.length / 2);
     let wins = games.filter((g, i) => i >= span).map(g => g.toGameData())
         .map(gd => gd.getGoalsByPeriod(team, period) > gd.getGoalsByPeriod(gd.getOtherTeamName(team), period))
     return {
