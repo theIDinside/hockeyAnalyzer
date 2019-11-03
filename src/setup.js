@@ -8,7 +8,7 @@ const UTIL = require('./util/utilities')
 const {teams, getFullTeamName, getSeasonStart} = require("./util/constants");
 const puppeteer = require('puppeteer');
 const {createGameDocument, Game, getLastXGamesPlayedBy} = require('./backend/models/GameModel');
-const { GameInfo }= require("./backend/models/GameInfoModel");
+const { GameInfo, findTodaysGames }= require("./backend/models/GameInfoModel");
 const mongoose = require('mongoose');
 
 const SCHEDULE_FILE = "2019_2020_NHL_Schedule.csv";
@@ -427,12 +427,15 @@ async function processCalendar(data) {
                     UTIL.l(`Start scraping at ${games[0].gameID}`);
                     let gID = (games[0] === undefined || games[0] === null) ? 2019020001 : games[0].gameID;
                     gID += 1;
-                    let last_game_played = null;
-                    let games_today = GameInfo.findTodaysGames("nhl");
-                    let end_id = games_today[0].gameID - 1;
-                    scrapeGames(gID, end_id).then(res => {
-                        UTIL.l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
-                        db.close();
+                    let games_today = findTodaysGames("nhl").then(games_today => {
+                        let end_id = games_today[0].gameID - 1;
+                        GameInfo.findOne({gameID: end_id-1}).then(doc => {
+                            console.log(`Last game played was: ${doc.gameID} with teams: ${doc.teams.away}-${doc.teams.home}. Date played: ${doc.datePlayed}`)
+                            scrapeGames(gID, end_id).then(res => {
+                                UTIL.l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+                                db.close();
+                            });
+                        });
                     });
                 } else {
                     UTIL.l("Found no games");

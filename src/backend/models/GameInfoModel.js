@@ -57,10 +57,11 @@ GameInfoSchema.methods.getAwayTeamLastGames = function(x) {
     })
 };
 
-GameInfoSchema.statics.findTodaysGames = function(league="nhl") {
+async function findTodaysGames(league="nhl") {
     let l = league.toUpperCase();
     if(l === "NHL")
     {
+        console.log(`Searching for games today. League: ${league}`);
         let date_str = new Date().toLocaleString("en-us", { timeZone: "America/New_York"}); // All games are shown in Eastern Time, on www.nhl.com
         let date = new Date(date_str);
 
@@ -68,7 +69,9 @@ GameInfoSchema.statics.findTodaysGames = function(league="nhl") {
         tomorrow.setUTCHours(0); // no games start (usually, i have no way of knowing at this point) at 00:00 midnight. So the day ends there.
         let midnight = date.toISOString().split("T")[0];
         let d = new Date(midnight);
+        console.log(`Searching for games between: ${d} and ${tomorrow}`);
         return GameInfo.find({ datePlayed: { $gte: d, $lt: tomorrow }}).then(res => {
+            console.log("Search results: ");
             if(res.length > 0) {
                 console.log(`Found ${res.length} games today.`);
                 res.forEach(gi => {
@@ -126,4 +129,4 @@ GameInfoSchema.post("save", (gInfoDoc) => {
 
 let GameInfo = mongoose.model("GameInfo", GameInfoSchema);
 
-module.exports = { GameInfo };
+module.exports = { GameInfo, findTodaysGames};
