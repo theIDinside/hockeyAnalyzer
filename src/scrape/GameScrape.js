@@ -32,6 +32,18 @@ const getGameSummaryURL = (gameID) => {
     return `http://www.nhl.com/scores/htmlreports/${getSeasonString()}/GS02${removePrefixOf(gameID.toString(), 6)}.HTM`;
 }
 
+/**
+ * Returns shot summary URL for game with id gameID.
+ * @param {number} gameID
+ * @returns {string} the URL as string.
+ */
+const getShotSummaryURL = (gameID) => {
+    let id = gameID.toString();
+    if(id.length !== 10) throw Error("Game id passed to getShotSummaryURL(gameID) has to be of length 10");
+    let game_number = [...id].splice(id.length-4, id.length).join("");
+    return `http://www.nhl.com/scores/htmlreports/20192020/SS02${game_number}.HTM`;
+}
+
 /// This function, retrieves from the site, the games for the coming 6 days (including the provided date in the argument. This is I guess somehow, what the site prefetches or something.)
 async function getGameIDsAtDate(date) {
         let currDate = new Date(date);

@@ -7,21 +7,23 @@
     </h1>
     <div class="columns">
       <div class="column">
-        <game-team :analysis="awayAnalysis" :team="awayTeam"></game-team>
+        <game-team :analysis="awayAnalysis" :season="awaySeason" :team="awayTeam"></game-team>
       </div>
       <div class="column">
-        <game-team :analysis="homeAnalysis" :team="homeTeam"></game-team>
+        <game-team :analysis="homeAnalysis" :season="homeSeason" :team="homeTeam"></game-team>
       </div>
+    </div>
+    <div>
+      <game-team-compare :homeSeason="homeSeason" :awaySeason="awaySeason" :homeAnalysis="homeAnalysis" :awayAnalysis="awayAnalysis"></game-team-compare>
     </div>
   </div>
   </div>
 </template>
 
 <script>
-import LineChart from './LineChart'
 import axios from 'axios'
-import Team from './Team'
 import GameTeam from './GameTeam'
+import GameTeamCompare from '@/components/GameTeamCompare'
 
 function abbreviateName (team) {
   switch (team) {
@@ -94,9 +96,8 @@ function abbreviateName (team) {
 export default {
   name: 'Game',
   components: {
+    GameTeamCompare,
     GameTeam,
-    Team,
-    LineChart
   },
   data () { // the private "memory pool" that each component owns. The component can change this data.
     return {
@@ -107,20 +108,24 @@ export default {
       homeTeam: '',
       awayTeam: '',
       homeAnalysis: {},
-      awayAnalysis: {}
+      homeSeason: {},
+      awayAnalysis: {},
+      awaySeason: {}
     }
   },
   mounted () {
     this.gameID = this.$route.params.gameID
     axios(`${this.$API}/games/${this.$route.params.gameID}`).then(res => {
-      console.log('Hello world')
-      this.homeAnalysis = res.data.homeTeamAnalysis
+      this.homeAnalysis = res.data.homeTeamSpanAnalysis
       console.log(`Home team : ${this.homeAnalysis.team}`)
-      this.awayAnalysis = res.data.awayTeamAnalysis
+      this.awayAnalysis = res.data.awayTeamSpanAnalysis
       console.log(`Home team : ${this.awayAnalysis.team}`)
       this.homeTeam = this.homeAnalysis.team
       this.awayTeam = this.awayAnalysis.team
-      console.log(`Goals against period average for home team: ${this.homeAnalysis.GAPeriodAverages[0].trendChartData}`)
+      this.homeSeason = res.data.homeTeamSeasonAnalysis
+      this.awaySeason = res.data.awayTeamSeasonAnalysis
+      console.log(`Home season object instanceof==object: ${this.homeSeason instanceof Object}`)
+      console.log(`Goals against period average for home team: ${this.homeAnalysis.GAAverage.periods.trendChartData}`)
 
       // first, get the gameInfo data, that is linked to gameID.
       // then, populate team names & date played.
@@ -143,11 +148,17 @@ export default {
       this.gameID = this.$route.params.gameID
       console.log(`Fetching data from API at ${this.$API}/games/${this.$route.params.gameID}`)
       axios(`${this.$API}/games/${this.$route.params.gameID}`).then(res => {
-        this.homeAnalysis = res.data.homeTeamAnalysis
-        this.awayAnalysis = res.data.awayTeamAnalysis
+        this.homeAnalysis = res.data.homeTeamSpanAnalysis
+        this.awayAnalysis = res.data.awayTeamSpanAnalysis
+        this.homeSeason = res.data.homeTeamSeasonAnalysis
+        this.awaySeason = res.data.awayTeamSeasonAnalysis
         this.homeTeam = this.homeAnalysis.team
         this.awayTeam = this.awayAnalysis.team
-
+        for (let p in this.homeAnalysis) {
+          console.log(`Property p == ${p}`)
+        }
+        console.log(`Home season object instanceof==object: ${this.homeSeason instanceof Object}`)
+        console.log(`Goals against period average for home team: ${this.homeAnalysis.GAAverage.periods.trendChartData}`)
         // first, get the gameInfo data, that is linked to gameID.
         // then, populate team names & date played.
         // After this is done, send a request to analyze the teams history.
@@ -157,7 +168,7 @@ export default {
           console.log(err)
         }
       })
-    },
+    }/*,
     getLastHomeGames () {
       axios(`${this.$API}/team/${abbreviateName(this.homeTeam)}?at=home&amt=10`).then(response => {
         // let data = response.data
@@ -165,28 +176,7 @@ export default {
     },
     getLastAwayGames () {
 
-    },
-    periodWins (span) {
-
-    },
-    periodGoalAverage (span) {
-
-    },
-    gameGoalAverage (span) {
-
-    },
-    gameGoalForAverage (span) {
-
-    },
-    gameGoalAgainstAverage (span) {
-
-    },
-    emptyNetScoring (span) {
-
-    },
-    emptyNetLetUps (span) {
-
-    }
+    }*/
   }
 }
 </script>

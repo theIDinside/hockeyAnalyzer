@@ -1,13 +1,10 @@
 'use strict';
-
-const {dumpErrorStackTrace} = require("../util/utilities")
-
 const {getFullTeamName} = require("../util/utilities");
 
 const {GameInfo} = require("./models/GameInfoModel");
-const {Game} = require("./models/GameModel");
+// const {Game} = require("./models/GameModel");
 const API = require("./analytics/api").API;
-
+const {dumpErrorStackTrace} = require("../util/utilities");
 /**
  * check @span days backward, and check how many games have been played by @team
  * Useful info to account for fatigue. If one team has played 4 games in the last 6 days, vs a team with only 2 games in the last 5, that can be a pretty big advantage or disadvantage,
@@ -33,46 +30,116 @@ async function queryGamesPlayed(team, span) {
 }
 
 /**
+ * Returns the calculated Corsi, from team average.
+ * @return {number}
+ */
+function CorsiAverage(for_average, against_average) { return for_average - against_average; }
+
+/**
+ * Returns the calculated Corsi, from team average.
+ * @return {number}
+ */
+function CorsiAveragePct(favg, aavg) { return favg / (favg+aavg); }
+
+/**
+ * Returns the calculated PDO, from team average.
+ * @return {number}
+ */
+function PDOAverage(gaavg, saavg, gfavg, sfavg) { return (1-(gaavg/saavg) + gfavg/sfavg) * 100.0; }
+
+
+
+async function SeasonAverageAnalysis(team, isHome) {
+    // getter function for periods
+    // this getter function makes it possible to write obj.GFA.period(1) and get the goals for average for period 1,
+    // where obj is the returned object from this function
+    try {
+        return await API.getAllGamesPlayedBy(team).then(games => {
+            let r = {
+                team: team,
+                GFA: {
+                    periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getGoalsByPeriod(team, p)).reduce((res, goals) => res + goals, 0) / games.length),
+                    game: games.map(g => g.toGameData().getGoalsBy(team)).reduce((res, goals) => res + goals, 0) / games.length
+                }, // Goals for [periods...], game
+                GAA: {
+                    periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getGoalsByPeriod(g.toGameData().getOtherTeamName(team), p)).reduce((res, goals) => res + goals, 0) / games.length),
+                    game: games.map(g => g.toGameData().getGoalsBy(g.toGameData().getOtherTeamName(team))).reduce((res, goals) => res + goals, 0) / games.length
+                }, // Goals against [periods...], game
+                SFA: {
+                    periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getShotsByPeriod(team, p)).reduce((res, shots) => res + shots, 0) / games.length),
+                    game: games.map(g => g.toGameData().getShotsBy(team)).reduce((res, shots) => res + shots, 0) / games.length
+                }, // Shots for [periods...], game
+                SAA: {
+                    periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getShotsByPeriod(g.toGameData().getOtherTeamName(team), p)).reduce((res, shots) => res + shots, 0) / games.length),
+                    game: games.map(g => g.toGameData().getShotsBy(g.toGameData().getOtherTeamName(team))).reduce((res, shots) => res + shots, 0) / games.length,
+                } // Shots against [periods...], game
+                /*
+                Corsi: CorsiAverage(this.SFA.game, this.SAA.game),
+                CorsiPct: CorsiAveragePct(this.SFA.game, this.SAA.game),
+                PDOAverage: PDOAverage(this.GAA.game, this.SAA.game, this.GFA.game, this.SFA.game)
+                */
+            };
+            console.log("SAA: " + r.SAA.game);
+            console.log(`SAA periods: ${[...r.SAA.periods]}`);
+            console.log("SFA: " + r.SFA.game);
+            console.log(`SFA periods: ${[...r.SFA.periods]}`);
+
+            return r;
+        });
+    } catch(e) {
+        dumpErrorStackTrace(e);
+    }
+}
+
+/**
  *
  * @param team
- * @return {Promise<{GAPeriodAverages: Number[], EmptyNetGoals: Boolean[], EmptyNetLetUps: Boolean[], PeriodWins: Boolean[], TotalGoalsGameAverage: Number, GFAverage: Number, GAAverage: Number, GFPeriodAverages: Number[], TotalGoalsPeriodAverage: Number[]}, passed: Boolean>}
+ * @param isHome
+ * @returns { Promise< {
+ *  team: string,
+ *  GAAverage: { periods: number[], game: number },
+ *  GFAverage: { periods: number[], game: number },
+ *  GAverageTotal: { periods: number[], game: number },
+ *  PeriodWins: { wins: boolean[], period: number, games: number, pct: number },
+ *  EmptyNetGoals: { all_wins: number, games: number, ENGoals: number, pct: number },
+ *  EmptyNetLetUps: { all_losses: number, games: number, ENLetUps: number, pct: number }
+ * }> | { passed: boolean, msg: string } }
  */
-async function FullAnalysis(team, isHome) {
+async function SpanAnalysis(team, isHome) {
     let gameSpan = 10;
     const FULL_SEASON = 81;
     try {
-        return await Promise.all([API.getLastXGamesPlayedBy(gameSpan*2, team),
-            API.getLastXGamesWonBy(gameSpan*2, team),
-            API.getLastXGamesLostBy(gameSpan*2, team),
+        return await Promise.all([API.getLastXGamesPlayedBy(gameSpan, team),
+            API.getLastXGamesWonBy(gameSpan, team),
+            API.getLastXGamesLostBy(gameSpan, team),
             API.getLastXGamesWonBy(FULL_SEASON, team)]).then(allGames => {
         let [games, wonGames, lostGames, empty_net_games] = allGames; // lostGames, used to analyze how often they let up a goal, into empty net, when they lose.
             games = games.reverse();
             wonGames = wonGames.reverse();
             lostGames = lostGames.reverse();
-
-
-
-            let res = {
+            return {
                 team: team,
-                GAAverage: API.GAGameAverage(team, games),
-                GFAverage: API.GFGameAverage(team, games),
-                TotalGoalsGameAverage: API.GGameAverage(team, games),
-                GAPeriodAverages: [...Array(4).keys()].filter(i => i > 0).map(period => API.GAPeriodAverage(team, games, period)),
-                GFPeriodAverages: [...Array(4).keys()].filter(i => i > 0).map(period => API.GFPeriodAverage(team, games, period)),
+                GAAverage: {
+                    periods: [...Array(4).keys()].filter(i => i > 0).map(period => API.GAPeriodAverage(team, games, period)),
+                    game: API.GAGameAverage(team, games)
+                },
+                GFAverage: {
+                    periods: [...Array(4).keys()].filter(i => i > 0).map(period => API.GFPeriodAverage(team, games, period)),
+                    game: API.GFGameAverage(team, games)
+                },
+                GAverageTotal: {
+                    periods: [...Array(4).keys()].filter(i => i > 0).map(period => API.GPeriodAverage(team, games, period)),
+                    game: API.GGameAverage(team, games)
+                },
                 PeriodWins: [...Array(4).keys()].filter(i => i > 0).map(period => API.PeriodWins(team, games, period)),
-                TotalGoalsPeriodAverage: [...Array(4).keys()].filter(i => i > 0).map(period => API.GPeriodAverage(team, games, period)),
                 EmptyNetGoals: API.EmptyNetScoring(team, empty_net_games),
                 EmptyNetLetUps: API.EmptyNetLetUps(team, lostGames),
-                lastGames: API.lastXGameStats(team, games.filter((g, i) => i >= (gameSpan*2)-5)),
                 passed: true
             };
-            // console.log(`Returning analysis for team: ${res.team}. GFA: ${res.GFAverage.average}. GAA: ${res.GAAverage.average}.GAPA len ${res.GAPeriodAverages.length} GAPA: ${[...res.GAPeriodAverages[0].trendChartData]} `);
-            return res;
         }).catch(err => {
-            console.log(`Error in full analysis function: ${err}\n ${err.stack}`);
-        })
+            dumpErrorStackTrace(err, "Error in full analysis function:")
+        });
     } catch (err) {
-        const {dumpErrorStackTrace} = require("../util/utilities")
         dumpErrorStackTrace(err);
         return {
             passed: false,
@@ -88,7 +155,7 @@ let BetRoute = {
     path: "/game/{gameID}",
     handler: async (request, h) => {
         let gameID = Number.parseInt(encodeURIComponent(request.params.gameID));
-        let g = await GameInfo.find({gameID: gameID}).then((err, gameInfo) => {
+        return await GameInfo.find({gameID: gameID}).then((err, gameInfo) => {
             return {
                 gameID: gameInfo.gameID,
                 datePlayed: gameInfo.datePlayed,
@@ -96,8 +163,6 @@ let BetRoute = {
                 away: gameInfo.teams.away
             }
         });
-
-        return g;
     },
     options: { // TODO: Fix so that a proper CORS header settings is set. Taking any CORS is NOT a good idea.
         cors: {
@@ -143,19 +208,28 @@ let AnalyzeComingGameRoute = {
     method: "GET",
     path: "/games/{ID}",
     handler: async (request, h) => {
-        // TODO: this function is not yet defined.
         let gameID = Number.parseInt(request.params.ID);
         try {
             let gameInfo = await API.reqGameInfo(gameID);
-            return await Promise.all([FullAnalysis(gameInfo.teams.home, true), FullAnalysis(gameInfo.teams.away, false)]).then(values => {
-            let [homeAnalysis, awayAnalysis] = values;
+            return await Promise.all(
+            [SpanAnalysis(gameInfo.teams.home, true),
+                    SpanAnalysis(gameInfo.teams.away, false),
+                    SeasonAverageAnalysis(gameInfo.teams.home, true),
+                    SeasonAverageAnalysis(gameInfo.teams.away, false)]).then(values => {
+            let [homeAnalysis, awayAnalysis, homeSeason, awaySeason] = values;
+            console.log(`Season object verifier: ${homeSeason.GFA!==undefined && awaySeason.GFA!==undefined && awaySeason.GFA!==null && homeSeason.GFA!==null}, Type of awaySeason && homeSeason: ${typeof homeSeason}/${typeof awaySeason}.`);
+            console.log(`Home season SFA: ${homeSeason.SFA.game}`);
                 return {
-                    homeTeamAnalysis: homeAnalysis,
-                    awayTeamAnalysis: awayAnalysis
-                }
+                    homeTeamSpanAnalysis: homeAnalysis,
+                    homeTeamSeasonAnalysis: homeSeason,
+                    awayTeamSpanAnalysis: awayAnalysis,
+                    awayTeamSeasonAnalysis: awaySeason
+                };
             });
         } catch (e) {
-            console.log("YOOOOOOOOO")
+            console.log(`Error in Route handler: ${e}`);
+            console.log(e.stack);
+            return {};
         }
     },
     options: { // TODO: Fix so that a proper CORS header settings is set. Taking any CORS is NOT a good idea.

@@ -8,4 +8,5 @@ api.key
 
 test\.js
 .db
-.code-workspace
+.code-workspaceerror.log
+error.log

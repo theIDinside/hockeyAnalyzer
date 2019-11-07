@@ -163,8 +163,12 @@ GameModelSchema.methods.getTeamStats = function(){
 };
 
 
-
-GameModelSchema.methods.toGameData = function(){
+/**
+ * Converts the GameModel, a MongoDB type (Extended from Model<*>) to our own Javascript type GameData. That way we
+ * are not sending GameModel types over the network to the browser.
+ * @returns {GameData}
+ */
+GameModelSchema.methods.toGameData = function() {
     return new GameData(this.gameID, this.teams.away, this.teams.home, this.datePlayed, this.finalResult, this.shotsOnGoal, this.faceOffWins, this.powerPlay, this.penaltyMinutes, this.hits, this.blockedShots, this.giveAways, this.scoringSummary.map(g => g.toGoal()));
 };
 

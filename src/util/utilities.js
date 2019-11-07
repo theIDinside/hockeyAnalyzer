@@ -38,8 +38,9 @@ const type = (obj) => {
     }
 };
 
-function dumpErrorStackTrace(err) {
+function dumpErrorStackTrace(err, msg="") {
     if(err) {
+        console.log(msg);
         console.error(`\nError Message: ${err.message}`);
         console.error(`Stack: ${err.stack}`)
         return`Error message: ${err.message}\n Stack trace: ${err.stack}`;
@@ -47,7 +48,7 @@ function dumpErrorStackTrace(err) {
 }
 
 function daysFromDate(date, amount) {
-    var tzOff = date.getTimezoneOffset() * 60 * 1000,
+    let tzOff = date.getTimezoneOffset() * 60 * 1000,
         t = date.getTime(),
         d = new Date(),
         tzOff2;
@@ -57,11 +58,10 @@ function daysFromDate(date, amount) {
   
     tzOff2 = d.getTimezoneOffset() * 60 * 1000;
     if (tzOff != tzOff2) {
-      var diff = tzOff2 - tzOff;
+      let diff = tzOff2 - tzOff;
       t += diff;
       d.setTime(t);
     }
-  
     return d;
 }
 

@@ -1,7 +1,7 @@
 const {dateStringify} = require("../../util/utilities");
 
 const {Game} = require("../models/GameModel");
-const {GameInfo} = require("../models/GameInfoModel");
+const {GameInfo, findTodaysGames} = require("../models/GameInfoModel");
 
 const GameAPI = require("./game");
 const PeriodAPI = require("./period");
@@ -30,6 +30,16 @@ const HomeGamesPredicate = team => {
 
 const AwayGamesPredicate = team => {
     return { "teams.away": team}
+}
+
+async function getAllGamesPlayedBy(team) {
+    return Game.find(DefaultPredicate(team)).then(games => {
+        if(games.length > 0) {
+            return games;
+        } else {
+            throw new Error(`Could not find any games with team ${team}`);
+        }
+    })
 }
 
 /**
@@ -103,9 +113,9 @@ async function reqGameInfo(gameID) {
 }
 
 async function getGamesToday() {
-   return GameInfo.findTodaysGames();
+   return findTodaysGames();
 }
 
-const API = { ...GameAPI, ...PeriodAPI, getLastXGamesWonBy, getLastXGamesLostBy, getLastXGamesPlayedBy, reqGameInfo, getGamesToday, ...SeasonAPI};
+const API = { ...GameAPI, ...PeriodAPI, getLastXGamesWonBy, getLastXGamesLostBy, getLastXGamesPlayedBy, reqGameInfo, getGamesToday, getAllGamesPlayedBy, ...SeasonAPI};
 
 module.exports =  { API };

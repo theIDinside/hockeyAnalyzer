@@ -26,6 +26,17 @@ function makeDataSets (arr, dt) {
   })
 }
 
+/**
+ * @return {string}
+ */
+function ChartGameLabelIndex (gameNumber) {
+  if (gameNumber === 1) {
+    return `${gameNumber} game ago`
+  } else {
+    return `${gameNumber} games ago`
+  }
+}
+
 export default {
   name: 'LineChart',
   props: {
@@ -80,7 +91,7 @@ export default {
     'this.dataSet': 'createChart'
   },
   methods: {
-    createChart () {
+    createChart (title) {
       let ds = (this.dataType.includes('PA')) ? makeDataSets(this.dataSet.trendChartData, this.dataType) : [{ // one line graph
         label: this.title,
         data: this.dataSet.trendChartData,
@@ -96,7 +107,7 @@ export default {
       let d = {
         type: 'line',
         data: {
-          labels: (this.dataType.includes('PA')) ? this.dataSet.trendChartData[0].trendChartData.map((v, i) => `Game ${(i + 1).toString()}`) : this.dataSet.trendChartData.map((v, i) => `Game ${(i + 1).toString()}`),
+          labels: (this.dataType.includes('PA')) ? this.dataSet.trendChartData[0].trendChartData.map((v, i) => `${ChartGameLabelIndex(5 - i)}`) : this.dataSet.trendChartData.map((v, i) => `${ChartGameLabelIndex(5 - i)}`),
           datasets: ds
         },
         options: {
@@ -113,7 +124,7 @@ export default {
           }
         }
       }
-      let ctx = document.getElementById(this.title+'_'+this.team)
+      let ctx = document.getElementById(this.title + '_' + this.team)
       ctx.height = 300
       ctx.width = 900
       const chart = new Chart(ctx, {
@@ -121,7 +132,7 @@ export default {
         data: d.data,
         options: d.options
       })
-      chart.title = chart.title
+      chart.title = title
     },
     changeAnalyzeSpan (span) {
 

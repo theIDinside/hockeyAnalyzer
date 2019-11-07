@@ -1,5 +1,14 @@
 const {Goal} = require("./Goal");
 
+function ThrowError(gameData, team, message="") {
+    if(message === "") {
+        throw new Error(`You tried receiving stats by either home: ${gameData.home} or away: ${gameData.away}. But the parameter you provided was ${team}`);
+    } else {
+        throw new Error(message);
+    }
+
+}
+
 class GameData {
     /**
      *
@@ -35,6 +44,41 @@ class GameData {
 
     get isRegularSeason() {
         return this.id.toString()[5] === "2";
+    }
+
+    getShotsBy(team) {
+        return this.shotsOnGoal.reduce((res, period) => {
+            if(team === this.away) {
+                return res + period.away;
+            } else if(team === this.home) {
+                return res + period.home;
+            } else {
+                ThrowError(this, team);
+            }
+        }, 0);
+    }
+
+    getShotsByPeriods(team) {
+        return this.shotsOnGoal.map(period => {
+            if(team === this.away) {
+                return period.away;
+            } else if(team === this.home) {
+                return period.home;
+            } else {
+                ThrowError(this, team);
+            }
+        })
+    }
+
+    getShotsByPeriod(team, period) {
+        if(period < 1 || period > 3)
+            ThrowError(this, team, `When retrieving shots by period, valid period numbers are 1 through 3. You provided :${period}`);
+        if(team === this.away) {
+            return this.shotsOnGoal[period-1].away;
+        } else if(team === this.home) {
+            return this.shotsOnGoal[period-1].home;
+        } else
+            ThrowError(this, team);
     }
 
     getOtherTeamName(team) { return (team === this.away) ? this.home : this.away; }
@@ -90,10 +134,12 @@ class GameData {
     }
 
     getGoalsBy(team) {
-        if(team === this.away) {
+        if(team === this.away)
             return this.finalResult.away;
-        } else
+        else if(team === this.home)
             return this.finalResult.home;
+        else
+            ThrowError(this, team);
     }
 
     get summary() {
@@ -130,11 +176,9 @@ class GameData {
                 return {home: res.home, away: res.away + 1 }
             }
         }, {home: 0, away: 0});
-        console.log(`Score: ${this.home}:${p1.home} - ${this.away}:${p1.away}`)
-        console.log(`Score: ${this.home}:${p2.home} - ${this.away}:${p2.away}`)
-        console.log(`Score: ${this.home}:${p3.home} - ${this.away}:${p3 .away}`)
         return [p1, p2, p3];
     }
+
 }
 
 module.exports.GameData = GameData;

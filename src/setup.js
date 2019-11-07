@@ -427,7 +427,7 @@ async function processCalendar(data) {
                     UTIL.l(`Start scraping at ${games[0].gameID}`);
                     let gID = (games[0] === undefined || games[0] === null) ? 2019020001 : games[0].gameID;
                     gID += 1;
-                    let games_today = findTodaysGames("nhl").then(games_today => {
+                    findTodaysGames("nhl").then(games_today => {
                         let end_id = games_today[0].gameID - 1;
                         GameInfo.findOne({gameID: end_id-1}).then(doc => {
                             console.log(`Last game played was: ${doc.gameID} with teams: ${doc.teams.away}-${doc.teams.home}. Date played: ${doc.datePlayed}`)

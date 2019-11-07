@@ -1,6 +1,6 @@
 <template>
     <div>Today's games
-      <span v-if="loading">Fetching today's games...</span>
+      <span v-if="loading">Fetching today's games... (waiting...)</span>
       <br>
       Date {{ date }}
       <ul>

@@ -30,10 +30,10 @@ function GFGameAverage(team, games) {
 //    console.log(`Average data in GFGameAverage for team ${team}: ${[...avg]}`);
     let trendAtChartData = [...Array(span).keys()]
         .map((v, index) =>
-            games
-                .filter((g, i) => i < (span+index+1) && i > index)
+            (games
+                .filter((g, i) => i < (span+index) && i >= index)
                 .map(g => g.toGameData().getGoalsBy(team))
-                .reduce((res, goals) => res + goals, 0.0) / span);
+                .reduce((res, goals) => res + goals, 0.0) / span).toFixed(4));
     return {
         games: span,
         average: trendAtChartData[trendAtChartData.length-1],
@@ -52,11 +52,11 @@ function GAGameAverage(team, games) {
     const span = Math.floor((games.length / 2));
     let trendAtChartData = [...Array(span).keys()]
         .map((v, index) =>
-            games
-                .filter((g, i) => i < (span+index+1) && i > index)
+            (games
+                .filter((g, i) => i < (span+index) && i >= index)
                 .map(g => g.toGameData())
                 .map(gd => gd.getGoalsBy(gd.getOtherTeamName(team)))
-                .reduce((res, goals) => res + goals, 0) / span);
+                .reduce((res, goals) => res + goals, 0) / span).toFixed(4));
     return {
         games: span,
         average: trendAtChartData[trendAtChartData.length-1],
@@ -76,10 +76,10 @@ function GGameAverage(team, games) {
     const span = Math.floor((games.length / 2));
     let trendAtChartData = [...Array(span).keys()]
         .map((v, index) =>
-            games
-                .filter((g, i) => i < (span+index+1) && i > index)
+            (games
+                .filter((g, i) => i < (span+index) && i >= index)
                 .map(g => g.toGameData().totalScore)
-                .reduce((res, goals) => res + goals, 0) / span);
+                .reduce((res, goals) => res + goals, 0) / span).toFixed(4));
 
     return {
         games: span,
@@ -135,9 +135,9 @@ function EmptyNetScores(team, games) {
  * 
  * @param {string} team 
  * @param { Game[] } games 
- * @return {  { result: { games: number, ENGoals: number, pct: number } } }
+ * @return {  { result: { all_wins: number, games: number, ENGoals: number, pct: number } } }
  */
-async function EmptyNetScoring(team, games) {
+function EmptyNetScoring(team, games) {
     let games_won_regular = games.filter(game => {
         let gd = game.toGameData();
         for(let goal of gd.scoringSummary) {
@@ -176,7 +176,7 @@ async function EmptyNetScoring(team, games) {
  * as the result of the analysis.
  * @param {string} team
  * @param {GameModel[]} games
- * @returns {{pct: number, games: number, ENLetUps: *}}
+ * @returns {{ all_losses: number, games: number, ENLetUps: number, pct: number }}
  * @constructor
  */
 function EmptyNetLetUps(team, games) {
@@ -208,18 +208,47 @@ function EmptyNetLetUps(team, games) {
     }
 }
 
+/**
+ * Fenwick is almost identical to the stat type Corsi, with the exception that blocked shots are not taken into account.
+ * Also be aware that this Fenwick used here, isn't really the real Fenwick either. It does *not* take account for missed shots.
+ * They say somehow missed shots are used in this calculation, but I think that seriously misleads the over arching analysis.
+ * Shot efficiency is important. If a team keeps missing shots, they can be throwing it from the neutral zone.
+ * @param cf
+ * @param ca
+ * @constructor
+ */
+function Fenwick(cf, ca) {
+    this.for = cf;
+    this.against = ca;
+    this.calculate = () => this.for - this.against;
+}
+
+function Corsi(cf, ca) {
+    this.for = cf;
+    this.against = ca;
+    this.calculate = () => this.for - this.against;
+}
+
+function PDO(save, shot_eff) {
+    this.save_percentage = save;
+    this.shot_efficiency = shot_eff;
+    this.calculate = () => this.save_percentage + this.shot_efficiency;
+}
+
 const lastXGameStats = (team, games) =>
     games.map(g => g.toGameData())
             .map(gd => {
-                let key = (gd.home === team) ? 'home' : 'away';
-                let key2 = (key === "home") ? "away" : "home";
+                let Team = (gd.home === team) ? 'home' : 'away';
+                let Opponent = (Team === "home") ? "away" : "home";
                 return {
-                    at: key,
-                    vs: (key === "home") ? gd.away : gd.home,
+                    at: Team,
+                    vs: (Team === "home") ? gd.away : gd.home,
                     date: gd.date,
                     shots: gd.shotsOnGoal,
-                    score: { team: gd.finalResult[key], opponent: gd.finalResult[key2] },
-                    scorePct: { team: gd.shotsOnGoal[key] / gd.finalResult[key], opponent: gd.shotsOnGoal[key2] / gd.finalResult[key2] },
+                    score: { team: gd.finalResult[Team], opponent: gd.finalResult[Opponent] },
+                    scorePct: { team: gd.shotsOnGoal[Team] / gd.finalResult[Team], opponent: gd.shotsOnGoal[Opponent] / gd.finalResult[Opponent] },
+                    pdo: new PDO(1-(gd.finalResult[Opponent]/gd.shotsOnGoal[Opponent]), gd.finalResult[Team] / gd.shotsOnGoal[Team] ),
+                    corsi: new Corsi(gd.shotsOnGoal[Team], gd.shotsOnGoal[Opponent]),
                     periods: gd.periods,
                     won: (team === gd.winner)
                 }
