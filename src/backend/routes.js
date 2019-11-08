@@ -120,6 +120,20 @@ async function SpanAnalysis(team, isHome) {
             games = games.reverse();
             wonGames = wonGames.reverse();
             lostGames = lostGames.reverse();
+            let PK_data = API.PenaltyKilling(team, games); // Array of objects, like: [{total, goals, pct}, {total, goals, pct}, {total, goals, pct}, ...]
+            let PP_data = API.PowerPlay(team, games);
+
+            let PK = {
+                trendChartData: PK_data.map(pk_stats => Number.parseFloat(pk_stats.pct.toFixed(3))),
+                data: PK_data
+            };
+            let PP = {
+                trendChartData: PP_data.map(pp_stats => Number.parseFloat(pp_stats.pct.toFixed(3))),
+                data: PP_data
+            };
+
+            console.log(`PK data: ${[...PK.trendChartData]}`);
+
             return {
                 team: team,
                 GAAverage: {
@@ -135,6 +149,8 @@ async function SpanAnalysis(team, isHome) {
                     game: API.GGameAverage(team, games)
                 },
                 PeriodWins: [...Array(4).keys()].filter(i => i > 0).map(period => API.PeriodWins(team, games, period)),
+                PK: PK,
+                PP: PP,
                 EmptyNetGoals: API.EmptyNetScoring(team, empty_net_games),
                 EmptyNetLetUps: API.EmptyNetLetUps(team, lostGames),
                 passed: true

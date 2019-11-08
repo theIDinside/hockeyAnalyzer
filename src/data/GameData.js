@@ -83,6 +83,48 @@ class GameData {
 
     getOtherTeamName(team) { return (team === this.away) ? this.home : this.away; }
 
+    getPowerPlays(team) {
+        if(team === this.away) {
+            let {goals, total} = this.powerPlay.away;
+            return {
+                goals: goals,
+                total: total
+            };
+        } else if(team === this.home) {
+            let {goals, totals} = this.powerPlay.home;
+            return {
+                goals: goals,
+                total: totals
+            };
+        } else {
+            throw new Error(`Team provided as parameter does not play in this game: ${team}. Teams playing: ${this.away}-${this.home}`);
+        }
+    }
+    getPenaltyKill(team) {
+        if(team === this.home) {
+            let {goals, total} = this.powerPlay.away;
+            if(total === undefined) {
+                console.log(`Value is undefined in game: ${this.away}-${this.home} with gameID: ${this.id}`);
+            }
+            return {
+                goals: goals,
+                total: total
+            };
+        } else if(team === this.away) {
+            let {goals, totals} = this.powerPlay.home;
+            if(totals === undefined) {
+                console.log(`Value is undefined in game: ${this.away}-${this.home} with gameID: ${this.id}`);
+            }
+            console.log(`Goals: ${goals}. Total in game: ${totals}`);
+            return {
+                goals: goals,
+                total: totals
+            };
+        } else {
+            throw new Error(`Team provided as parameter does not play in this game: ${team}. Teams playing: ${this.away}-${this.home}`);
+        }
+    }
+
     get totalScore() {
         return this.finalResult.away + this.finalResult.home;
     }

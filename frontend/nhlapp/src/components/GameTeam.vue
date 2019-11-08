@@ -21,11 +21,22 @@
       <div slot="header"><h2>Period average stats</h2></div>
       <v-card>
         <v-card-title>Goals for/period average over 5 game span</v-card-title>
-        <line-chart :title="'Goals for/Period ' + team" :team="team" v-bind:dataType="'GFPA'" v-bind:dataSet="{ trendChartData: analysis.GFAverage.periods }"></line-chart>
+        <line-chart :title="'Goals for/Period ' + team" :team="team" v-bind:dataType="'Multiple:GFPA'" v-bind:dataSet="{ trendChartData: analysis.GFAverage.periods }"></line-chart>
       </v-card>
       <v-card>
         <v-card-title>Goals against/period average over 5 game span</v-card-title>
-        <line-chart :title="'Goals against/Period ' + team" :team="team" v-bind:dataType="'GAPA'" v-bind:dataSet="{ trendChartData: analysis.GAAverage.periods }"></line-chart>
+        <line-chart :title="'Goals against/Period ' + team" :team="team" v-bind:dataType="'Multiple:GAPA'" v-bind:dataSet="{ trendChartData: analysis.GAAverage.periods }"></line-chart>
+      </v-card>
+    </v-expansion-panel-content>
+    <v-expansion-panel-content expand-icon="mdi-menu-down">
+      <div slot="header"><h2>Special teams 5 game span averages</h2></div>
+      <v-card>
+        <v-card-title>Penalty Killing 5 game span</v-card-title>
+        <line-chart :title="'Penalty Killing '+team" :team="team" v-bind:dataType="'PK stats'" v-bind:dataSet="{ trendChartData: analysis.PK.trendChartData }" v-bind:percent=true></line-chart>
+      </v-card>
+      <v-card>
+        <v-card-title>Power play 5 game span</v-card-title>
+        <line-chart :title="'Power play '+team" :team="team" v-bind:dataType="'PP stats'" v-bind:dataSet="{ trendChartData: analysis.PP.trendChartData }" v-bind:percent=true></line-chart>
       </v-card>
     </v-expansion-panel-content>
     <v-expansion-panel-content expand-icon="mdi-menu-down">

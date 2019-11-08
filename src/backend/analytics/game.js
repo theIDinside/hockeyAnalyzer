@@ -3,6 +3,45 @@ const {Game} = require("../models/GameModel");
 const {GameData} = require('../../data/GameData')
 /// ------ GAME AVERAGES & ANALYSIS ------
 
+function PenaltyKilling(team, games) {
+    const span = Math.floor(games.length / 2);
+    return [...Array(span).keys()].map((v, index) => {
+        let total_pks = 0;
+        let goals = 0;
+      let pks = games.filter((g, i) => i <= (span+index) && i > index).map(g => g.toGameData().getPenaltyKill(team));
+
+      for(let pk of pks) {
+          console.log(`Total: ${pk.total}. Goals: ${pk.goals}`);
+          total_pks += pk.total;
+          goals += pk.goals;
+      }
+      return {
+        total: total_pks,
+        goals: goals,
+        pct: (1 - (goals / total_pks)) * 100.0
+      };
+    });
+}
+
+function PowerPlay(team, games) {
+    const span = Math.floor(games.length / 2);
+    return [...Array(span).keys()].map((v, index) => {
+        let total_pps = 0;
+        let goals = 0;
+        let pps = games.filter((g, i) => i <= (span+index) && i > index).map(g => g.toGameData().getPowerPlays(team));
+        for(let pp of pps) {
+            total_pps += pp.total;
+            goals += pp.goals;
+        }
+        return {
+            total: total_pps,
+            goals: goals,
+            pct: ((goals / total_pps) * 100.0)
+        };
+    })
+}
+
+
 /**
  * Returns goals for average over the last games, lastGames.
  * @param team {String}
@@ -256,17 +295,21 @@ class Time {
     equals(t) {
         return this >= t && this <= t;
     }
+
+    toString() {
+        return `${this.min}:${this.sec} P${this.period}`
+    }
+
     /**
      * For use with comparisons of two time points. and since mins and sec can be 0, we make *sure* it's never 0 by
      * adding 1. This basically gives us the ability to "fake" overloading operators in Javascript. Because
      *
      *  Example:
-     *      let t = new Time(13, 42, 2);  // 13:42 Period 2
-     *      let ta = new Time(13, 42, 2); // 13:42 Period 2
-     *      let t2 = new Time(17, 13, 3); // 17:13 Period 3
+     *      let t = new Time(13, 42, 2);  // 13:42 P2
+     *      let ta = new Time(13, 42, 2); // 13:42 P2
+     *      let t2 = new Time(17, 13, 3); // 17:13 P3
      *      t < t2 -> true
      *      t2 < t -> false
-     *      ta === t -> true
      * @returns {number}
      */
     valueOf() {
@@ -293,12 +336,16 @@ class Time {
  * @constructor
  */
 async function AnalyzePatterns(team, games) {
-    let pattern_filter = {
+    let pattern_filter = { // TODO: This is just an example filter object
             greatest_pickup: {
-                deficit: 2,
+                value: 2,
+                time: new Time(13, 42, 2)
+            },
+            greatest_loss: {
+                value: 2,
                 time: new Time(13, 42, 2)
             }
-    }
+    };
 }
 
 /**
@@ -347,4 +394,4 @@ const lastXGameStats = (team, games) =>
                 }
             });
 
-module.exports = { GFGameAverage, GAGameAverage, GGameAverage, EmptyNetScoring, EmptyNetLetUps, lastXGameStats };
+module.exports = { GFGameAverage, GAGameAverage, GGameAverage, EmptyNetScoring, EmptyNetLetUps, lastXGameStats, PowerPlay, PenaltyKilling };
