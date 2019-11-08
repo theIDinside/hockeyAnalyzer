@@ -5,6 +5,9 @@ const {GameInfo} = require("./models/GameInfoModel");
 // const {Game} = require("./models/GameModel");
 const API = require("./analytics/api").API;
 const {dumpErrorStackTrace} = require("../util/utilities");
+
+const FULL_SEASON = 81; // Full regular season
+
 /**
  * check @span days backward, and check how many games have been played by @team
  * Useful info to account for fatigue. If one team has played 4 games in the last 6 days, vs a team with only 2 games in the last 5, that can be a pretty big advantage or disadvantage,
@@ -107,7 +110,7 @@ async function SeasonAverageAnalysis(team, isHome) {
  */
 async function SpanAnalysis(team, isHome) {
     let gameSpan = 10;
-    const FULL_SEASON = 81;
+
     try {
         return await Promise.all([API.getLastXGamesPlayedBy(gameSpan, team),
             API.getLastXGamesWonBy(gameSpan, team),

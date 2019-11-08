@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-expansion-panel>
-      <v-expansion-panel-content :key="SC" expand-icon="mdi-menu-down">
+      <v-expansion-panel-content expand-icon="mdi-menu-down">
         <div slot="header"><h1>Stats comparison</h1></div>
         <v-card>
 
@@ -23,6 +23,29 @@ export default {
   methods: {
     compare () {
 
+    }
+  },
+  data () {
+    return {
+      GAA: {
+        periods: [0, 0, 0],
+        game: 0
+      },
+      GFA: {
+        periods: [0, 0, 0],
+        game: 0
+      },
+      SAA: {
+        periods: [0, 0, 0],
+        game: 0
+      },
+      SFA: {
+        periods: [0, 0, 0],
+        game: 0
+      },
+      PeriodWins: [0, 0, 0],
+      Corsi: 0,
+      PDO: 0
     }
   }
 }

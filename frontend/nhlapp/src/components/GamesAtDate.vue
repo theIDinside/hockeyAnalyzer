@@ -2,7 +2,7 @@
     <div>Today's games
       <span v-if="loading">Fetching today's games...</span>
       <ul>
-        <router-link tag="li" v-for="game in gamesToday" :key="game.gameID" :to="{ name: 'Game', params: { gameID: game.gameID }}"><a>{{game.away}} vs {{game.home}}</a></router-link>
+        <router-link tag="li" v-for="game in gamesToday" :key="game.gameID" :to="{ name: 'Game', params: { gameID: game.gameID }}"><a>{{game.away}} vs {{game.home}} at {{game.datePlayed}}</a></router-link>
       </ul>
     </div>
 </template>

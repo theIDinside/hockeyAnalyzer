@@ -53,7 +53,7 @@ function GAGameAverage(team, games) {
     let trendAtChartData = [...Array(span).keys()]
         .map((v, index) =>
             (games
-                .filter((g, i) => i < (span+index) && i >= index)
+                .filter((g, i) => i <= (span+index) && i > index)
                 .map(g => g.toGameData())
                 .map(gd => gd.getGoalsBy(gd.getOtherTeamName(team)))
                 .reduce((res, goals) => res + goals, 0) / span).toFixed(4));
@@ -77,7 +77,7 @@ function GGameAverage(team, games) {
     let trendAtChartData = [...Array(span).keys()]
         .map((v, index) =>
             (games
-                .filter((g, i) => i < (span+index) && i >= index)
+                .filter((g, i) => i <= (span+index) && i > index)
                 .map(g => g.toGameData().totalScore)
                 .reduce((res, goals) => res + goals, 0) / span).toFixed(4));
 
@@ -205,6 +205,99 @@ function EmptyNetLetUps(team, games) {
         games: games_lost_regular.length,
         ENLetUps: empty_net_letup_games.length,
         pct: (empty_net_letup_games.length / games_analyzed) * 100.0
+    }
+}
+
+const FULL_SEASON = 81;
+/** TODO: PROTOTYPING / SKETCHING ON A LIVE RESULT ANALYSIS FUNCTION. TEST CASE, live_result = "4-2 13:47 P2" */
+async function LiveResult(live_result, teams, span=FULL_SEASON) { // live result parameter could look like this: "4-2 13:47 P2" (String)
+    let home_games = API.getLastXGamesPlayedBy(span, home);
+    let away_games = API.getLastXGamesPlayedBy(span, away);
+    let [score, cTime, p] = live_result.split(" ");
+    let [aScore, hScore] = score.split("-");
+    let [min, sec] = cTime.split(":");
+    // If live_result is _not_ a string, and instead an object, destructuring it, would look something like this instead
+    // let {home_score, away_score, current_time, period} = live_result;
+    let {home, away} = teams;
+    // TODO: one could structure a filter object like this
+    let filter = {
+        score_behind: [aScore<hScore, hScore<aScore], // [false, true]
+        score_diff: [aScore-hScore, hScore-aScore], // [2, -2]
+        time: { min: 13, sec: 47, period: 2 }, // time & period
+    };
+    // TODO: Then one could use this object, to apply a filter/search on all games played, and see what outcomes came
+    // in games, where similar or equal results was at the same moment in time, in that/those game/games.
+    Promise.all([home_games, away_games]).then(all_games => {
+        let [hGames, aGames] = all_games;
+    })
+}
+
+class Time {
+    /**
+     *
+     * @param min {number}
+     * @param sec {number}
+     * @param period {number}
+     */
+    constructor(min, sec, period) {
+        this.min = min;
+        this.sec = sec;
+        this.period = period;
+    }
+
+    get asObject() {
+        return {
+            min: this.min,
+            sec: this.sec,
+            period: this.period
+        };
+    }
+
+    equals(t) {
+        return this >= t && this <= t;
+    }
+    /**
+     * For use with comparisons of two time points. and since mins and sec can be 0, we make *sure* it's never 0 by
+     * adding 1. This basically gives us the ability to "fake" overloading operators in Javascript. Because
+     *
+     *  Example:
+     *      let t = new Time(13, 42, 2);  // 13:42 Period 2
+     *      let ta = new Time(13, 42, 2); // 13:42 Period 2
+     *      let t2 = new Time(17, 13, 3); // 17:13 Period 3
+     *      t < t2 -> true
+     *      t2 < t -> false
+     *      ta === t -> true
+     * @returns {number}
+     */
+    valueOf() {
+        switch(this.period) {
+            case 1:
+                return (this.min + 1) * (this.sec + 1);
+            case 2:
+                return 20 * 60 + (this.min + 1) * (this.sec + 1); // 19*59 is the largest value if within any time of P1, therefore we add that
+            case 3:
+                return (20*60*2) + (this.min + 1) * (this.sec + 1);
+            case 4: // Overtime
+                return (20 * 60 * 3) + (this.min + 1) * (this.sec + 1);
+            default:
+                throw new Error(`Erroneous period value: ${this.period}. It should only be between 1 and 4`);
+        }
+    }
+}
+
+/**
+ * TODO: This is only a sketch / idea function so far. Anything placed here, is for further analysis dev
+ * @param team
+ * @param games
+ * @returns {Promise<void>}
+ * @constructor
+ */
+async function AnalyzePatterns(team, games) {
+    let pattern_filter = {
+            greatest_pickup: {
+                deficit: 2,
+                time: new Time(13, 42, 2)
+            }
     }
 }
 

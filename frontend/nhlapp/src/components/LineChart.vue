@@ -31,9 +31,11 @@ function makeDataSets (arr, dt) {
  */
 function ChartGameLabelIndex (gameNumber) {
   if (gameNumber === 1) {
-    return `${gameNumber} game ago`
+    return 'Current'
+  } else if(gameNumber === 2) {
+    return `${gameNumber-1} game ago`
   } else {
-    return `${gameNumber} games ago`
+    return `${gameNumber-1} games ago`
   }
 }
 

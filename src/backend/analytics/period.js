@@ -3,7 +3,7 @@ const {Game} = require("../models/GameModel");
 const { GameData } = require("../../data/GameData");
 let value = 0;
 /// ------ PERIOD AVERAGES & ANALYSIS ------
-
+const SpanFilter = (_, idx) => idx <= (span+index) && idx > index;
 
 /**
  * Returns goals made average per game, over a period of gameSeriesLength, by @param team
@@ -18,7 +18,7 @@ function GFPeriodAverage(team, games, period) {
     let trendChartData = [...Array(span).keys()]
         .map((v, index) =>
             (games
-                .filter((g, i) => i < (span+index) && i >= index)
+                .filter((g, i) => i <= (span+index) && i > index)
                 .map(g => {
                     return g.toGameData().getGoalsByPeriod(team, period)
                 })
@@ -45,7 +45,7 @@ function GAPeriodAverage(team, games, period) {
     let trendChartData = [...Array(span).keys()]
         .map((v, index) =>
             (games
-                .filter((g, i) => i < (span+index) && i >= index)
+                .filter((g, i) => i <= (span+index) && i > index)
                 .map(g => g.toGameData())
                 .map(gd => {
                     let goals = gd.getGoalsByPeriod(gd.getOtherTeamName(team), period);
@@ -78,7 +78,7 @@ function GPeriodAverage(team, games, period) {
     let trendChartData = [...Array(span).keys()]
         .map((v, index) =>
             (games
-                .filter((g, i) => i < (span+index) && i >= index)
+                .filter((g, i) => i <= (span+index) && i > index)
                 .map(g => g.toGameData().getGoalTotalByPeriod(period))
                 .reduce((res, goals) => res + goals, 0) / span).toFixed(4));
     return {
