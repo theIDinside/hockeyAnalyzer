@@ -2,19 +2,31 @@
   <div>
       <v-expansion-panel>
         <v-expansion-panel-content expand-icon="mdi-menu-down">
-          <div slot="header"><h1>Stats comparison</h1></div>
+          <div slot="header"><h1><b>Stats comparison</b></h1></div>
           <div class="columns">
             <div class="column">
               <v-card>
                 <div>
-                  <comparison-line-chart :percent="true" :title="'Powerplay comparison, 5 game span: '+awayAnalysis.team+' '+homeAnalysis.team" :teams="{ home: homeAnalysis.team, away: awayAnalysis.team }" v-bind:dataSetHome="{team: homeAnalysis.team, trendChartData: homeAnalysis.PP.trendChartData}" v-bind:data-set-away="{team: awayAnalysis.team, trendChartData: awayAnalysis.PP.trendChartData}"></comparison-line-chart>
+                  <comparison-line-chart :percent="true" :title="'Powerplay comparison/5 game span: '+awayAnalysis.team+' vs '+homeAnalysis.team" :teams="{ home: homeAnalysis.team, away: awayAnalysis.team }" v-bind:dataSetHome="{team: homeAnalysis.team, trendChartData: homeAnalysis.PP.trendChartData}" v-bind:data-set-away="{team: awayAnalysis.team, trendChartData: awayAnalysis.PP.trendChartData}"></comparison-line-chart>
+                </div>
+              </v-card>
+              <br>
+              <v-card>
+                <div>
+                  <comparison-line-chart :percent="false" :title="'Powerplays per game average/5 game span: '+awayAnalysis.team+' vs '+homeAnalysis.team" :teams="{ home: homeAnalysis.team, away: awayAnalysis.team }" v-bind:data-set-home="{team: homeAnalysis.team, trendChartData: homeAnalysis.PP.power_plays_amount_avg}" v-bind:data-set-away="{team: awayAnalysis.team, trendChartData: awayAnalysis.PP.power_plays_amount_avg}"></comparison-line-chart>
                 </div>
               </v-card>
             </div>
             <div class="column">
               <v-card>
                 <div>
-                  <comparison-line-chart :percent="true" :title="'Penalty Kill comparison, 5 game span: '+awayAnalysis.team+' '+homeAnalysis.team" :teams="{ home: homeAnalysis.team, away: awayAnalysis.team }" v-bind:dataSetHome="{team: homeAnalysis.team, trendChartData: homeAnalysis.PK.trendChartData}" v-bind:data-set-away="{team: awayAnalysis.team, trendChartData: awayAnalysis.PK.trendChartData}"></comparison-line-chart>
+                  <comparison-line-chart :percent="true" :title="'Penalty Kill comparison/5 game span: '+awayAnalysis.team+' vs '+homeAnalysis.team" :teams="{ home: homeAnalysis.team, away: awayAnalysis.team }" v-bind:data-set-home="{team: homeAnalysis.team, trendChartData: homeAnalysis.PK.trendChartData}" v-bind:data-set-away="{team: awayAnalysis.team, trendChartData: awayAnalysis.PK.trendChartData}"></comparison-line-chart>
+                </div>
+              </v-card>
+              <br>
+              <v-card>
+                <div>
+                  <comparison-line-chart :percent="false" :title="'Penalty kills per game average/5 game span: '+awayAnalysis.team+' vs '+homeAnalysis.team" :teams="{ home: homeAnalysis.team, away: awayAnalysis.team }" v-bind:dataSetHome="{team: homeAnalysis.team, trendChartData: homeAnalysis.PK.penalties_amount_avg}" v-bind:data-set-away="{team: awayAnalysis.team, trendChartData: awayAnalysis.PK.penalties_amount_avg}"></comparison-line-chart>
                 </div>
               </v-card>
             </div>
@@ -25,7 +37,7 @@
 </template>
 
 <script>
-import ComparisonLineChart from "./ComparisonLineChart";
+import ComparisonLineChart from "./charts/ComparisonLineChart";
 
 export default {
   name: 'GameTeamCompare',
@@ -65,6 +77,10 @@ export default {
       Corsi: 0,
       PDO: 0
     }
+  },
+  mounted() {
+    console.log(`Penalties taken/amount average for away: ${[...this.awayAnalysis.PK.penalties_amount_avg]}`)
+    console.log(`Penalties taken/amount average for home: ${[...this.homeAnalysis.PK.penalties_amount_avg]}`)
   }
 }
 </script>

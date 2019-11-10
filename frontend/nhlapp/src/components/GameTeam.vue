@@ -3,7 +3,7 @@
   <h2>{{team}} stats</h2><hr style="border-width: 10px" class="myOwnHr">
   <v-expansion-panel>
     <v-expansion-panel-content expand-icon="mdi-menu-down">
-      <div slot="header"><h2>Game average stats</h2></div>
+      <div slot="header"><h2><b>Game average stats</b></h2></div>
       <v-card>
         <v-card-title>Goals against/game average over 5 game span</v-card-title>
         <line-chart :title="'Goals against/Game '+team" :team="team" v-bind:dataType="'GA Game Average'" v-bind:dataSet="{ trendChartData: analysis.GAAverage.game.trendChartData }"></line-chart>
@@ -18,7 +18,7 @@
       </v-card>
     </v-expansion-panel-content>
     <v-expansion-panel-content expand-icon="mdi-menu-down">
-      <div slot="header"><h2>Period average stats</h2></div>
+      <div slot="header"><h2><b>Period average stats</b></h2></div>
       <v-card>
         <v-card-title>Goals for/period average over 5 game span</v-card-title>
         <line-chart :title="'Goals for/Period ' + team" :team="team" v-bind:dataType="'Multiple:GFPA'" v-bind:dataSet="{ trendChartData: analysis.GFAverage.periods }"></line-chart>
@@ -27,9 +27,13 @@
         <v-card-title>Goals against/period average over 5 game span</v-card-title>
         <line-chart :title="'Goals against/Period ' + team" :team="team" v-bind:dataType="'Multiple:GAPA'" v-bind:dataSet="{ trendChartData: analysis.GAAverage.periods }"></line-chart>
       </v-card>
+      <v-card>
+        <v-card-title>Period wins over last 10 games </v-card-title>
+        <circle-chart :labels="['Period 1', 'Period 2', 'Period 3']" :chart-type="'pie'" :title="'Period wins ' + team" :team="team" v-bind:dataType="'Multiple:PeriodWins'" v-bind:dataSet="{ trendChartData: analysis.PeriodWins.map(pw_stat => pw_stat.wins) }"></circle-chart>
+      </v-card>
     </v-expansion-panel-content>
     <v-expansion-panel-content expand-icon="mdi-menu-down">
-      <div slot="header"><h2>Special teams 5 game span averages</h2></div>
+      <div slot="header"><h2><b>Special teams 5 game span averages</b></h2></div>
       <v-card>
         <v-card-title>Penalty Killing 5 game span</v-card-title>
         <line-chart :title="'Penalty Killing '+team" :team="team" v-bind:dataType="'PK stats'" v-bind:dataSet="{ trendChartData: analysis.PK.trendChartData }" v-bind:percent=true></line-chart>
@@ -40,7 +44,7 @@
       </v-card>
     </v-expansion-panel-content>
     <v-expansion-panel-content expand-icon="mdi-menu-down">
-      <div slot="header"><h2>Season stats</h2></div>
+      <div slot="header"><h2><b>Season stats</b></h2></div>
       <v-card>
         <v-expansion-panel>
           <v-expansion-panel-content expand-icon="mdi-menu-down">
@@ -56,19 +60,15 @@
             <div slot="header"><b>Season Averages</b></div>
             <div class="columns">
               <div class="column">
-                <u>Per period</u><br>
-                Goals for - [1: {{season.GFA.periods[0].toFixed(3)}}, 2: {{season.GFA.periods[1].toFixed(3)}}, 3:
-                {{season.GFA.periods[2].toFixed(3)}}]<br>
-                Goals against - [1: {{season.GAA.periods[0].toFixed(3)}}, 2: {{season.GAA.periods[1].toFixed(3)}}, 3:
-                {{season.GAA.periods[2].toFixed(3)}}]<br>
-                Shots for [1: {{season.SFA.periods[0].toFixed(3)}}, 2: {{season.SFA.periods[1].toFixed(3)}}, 3:
-                {{season.SFA.periods[2].toFixed(3)}}]<br>
-                Shots against [1: {{season.SAA.periods[0].toFixed(3)}}, 2: {{season.SAA.periods[1].toFixed(3)}}, 3:
-                {{season.SAA.periods[2].toFixed(3)}}]<br>
+                <u>Per period (Only regulation stats)</u><br>
+                Goals for [{{season.GFA.periods.reduce((res, val, index) => `${res} ${index+1}: ${val.toFixed(3)}${index !== 2 ? ',' : ""}`, "")}} ] <br>
+                Goals against [{{season.GAA.periods.reduce((res, val, index) => `${res} ${index+1}: ${val.toFixed(3)}${index !== 2 ? ',' : ""}`, "")}} ] <br>
+                Shots for [{{season.SFA.periods.reduce((res, val, index) => `${res} ${index+1}: ${val.toFixed(3)}${index !== 2 ? ',' : ""}`, "")}} ] <br>
+                Shots against [{{season.SAA.periods.reduce((res, val, index) => `${res} ${index+1}: ${val.toFixed(3)}${index !== 2 ? ',' : ""}`, "")}} ] <br>
               </div>
               <div class="column">
-                <u>Per game</u><br>
-                Goals for - [{{season.GFA.game.toFixed(3)}}]<br>
+                <u>Per game (Only regulation stats)</u><br>
+                Goals for [{{season.GFA.game.toFixed(3)}}]<br>
                 Goals against - [{{season.GAA.game.toFixed(3)}}]<br>
                 Shots for [{{season.SFA.game.toFixed(3)}}]<br>
                 Shots against [{{season.SAA.game.toFixed(3)}}]<br>
@@ -86,13 +86,15 @@
 </template>
 
 <script>
-import LineChart from './LineChart'
+import LineChart from './charts/LineChart'
+import CircleChart from './charts/CircleChart'
 import Team from './Team'
 import TeamSeason from './TeamSeason'
 
 export default {
   components: {
     LineChart,
+    CircleChart
   },
   name: 'GameTeam',
   props: {

@@ -100,13 +100,14 @@ function GPeriodAverage(team, games, period) {
  */
 function PeriodWins(team, games, period) {
     const span = Math.floor(games.length / 2);
-    let wins = games.filter((g, i) => i >= span).map(g => g.toGameData())
-        .map(gd => gd.getGoalsByPeriod(team, period) > gd.getGoalsByPeriod(gd.getOtherTeamName(team), period))
+    let wins = games.map(g => g.toGameData()).filter(gd => gd.getGoalsByPeriod(team, period) > gd.getGoalsByPeriod(gd.getOtherTeamName(team), period)).length;
+    let losses = games.length - wins;
     return {
-        games: span,
+        games: games.length,
         period: period,
         wins: wins,
-        pct: wins.filter(v => v).length / span * 100.00
+        losses: losses,
+        pct:  wins / games.length * 100.00
     }
 }
 

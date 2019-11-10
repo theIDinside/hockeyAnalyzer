@@ -16,9 +16,10 @@ function PenaltyKilling(team, games) {
           goals += pk.goals;
       }
       return {
-        total: total_pks,
-        goals: goals,
-        pct: (1 - (goals / total_pks)) * 100.0
+          total: total_pks,
+          goals: goals,
+          penalties_taken_avg: total_pks / span,
+          pct: (1 - (goals / total_pks)) * 100.0
       };
     });
 }
@@ -36,6 +37,7 @@ function PowerPlay(team, games) {
         return {
             total: total_pps,
             goals: goals,
+            power_plays_amount_avg: total_pps / span,
             pct: ((goals / total_pps) * 100.0)
         };
     })

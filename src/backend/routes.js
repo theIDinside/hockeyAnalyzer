@@ -125,11 +125,13 @@ async function SpanAnalysis(team, isHome) {
 
             let PK = {
                 trendChartData: PK_data.map(pk_stats => Number.parseFloat(pk_stats.pct.toFixed(3))),
-                data: PK_data
+                data: PK_data,
+                penalties_amount_avg: PK_data.map(pk_stats => Number.parseFloat(pk_stats.penalties_taken_avg.toFixed(3)))
             };
             let PP = {
                 trendChartData: PP_data.map(pp_stats => Number.parseFloat(pp_stats.pct.toFixed(3))),
-                data: PP_data
+                data: PP_data,
+                power_plays_amount_avg: PP_data.map(pp_stats => Number.parseFloat(pp_stats.power_plays_amount_avg.toFixed(3))),
             };
 
             console.log(`PK data: ${[...PK.trendChartData]}`);
