@@ -8,6 +8,8 @@ import 'chart.js'
 import 'hchs-vue-charts'
 // import 'vuetify/dist/vuetify.min.css' // Ensure you are using css-loader
 
+Vue.prototype.$host =
+
 Vue.config.productionTip = false
 Vue.use(window.VueCharts)
 Vue.use(Vuetify, {

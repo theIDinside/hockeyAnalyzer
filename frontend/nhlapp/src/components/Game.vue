@@ -16,6 +16,9 @@
     <div>
       <game-team-compare :homeSeason="homeSeason" :awaySeason="awaySeason" :homeAnalysis="homeAnalysis" :awayAnalysis="awayAnalysis"></game-team-compare>
     </div>
+    <div>
+    <live-result :home="homeTeam" :away="awayTeam"></live-result>
+    </div>
   </div>
   </div>
 </template>
@@ -24,6 +27,7 @@
 import axios from 'axios'
 import GameTeam from './GameTeam'
 import GameTeamCompare from '@/components/GameTeamCompare'
+import LiveResult from './LiveResult'
 
 function abbreviateName (team) {
   switch (team) {
@@ -98,6 +102,7 @@ export default {
   components: {
     GameTeamCompare,
     GameTeam,
+    LiveResult
   },
   data () { // the private "memory pool" that each component owns. The component can change this data.
     return {

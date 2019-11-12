@@ -72,6 +72,10 @@ else
             echo "Scrape set to scrape all. SCRAPE_TYPE=\"ALL\""
             export SCRAPE_TYPE="ALL"
             ;;
+	VALIDATE)
+	    echo "Validating DB contents"
+	    export SCRAPE_TYPE="VALIDATE"
+	    ;;
         *) 
             echo "Scrape type variable not properly set. Exiting."
             clean_up_and_exit

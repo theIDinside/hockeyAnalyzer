@@ -72,7 +72,7 @@ async function getGameIDRange(start, end) {
                 break;
             }
         }
-        let arr = Array.from(IDRange(rangeBegin, rangeEnd));
+        let arr = Array.from(IDRange(rangeBegin, rangeEnd-1));
         for(let id in arr) {
             // 2018020121
             let tmp_str = arr[id].toString();
@@ -444,6 +444,28 @@ async function processCalendar(data) {
                         db.close();
                     });
                 }
+            });
+        } else if(OPERATION.toUpperCase() === "VALIDATE") {
+            Game.countDocuments({}).then(async res => {
+               console.log(`Result of count is: ${res}`);
+               let begin = 2019020001;
+               let end_id = begin + (res-1);
+               let dowork = async () => {
+                   let missing_games = [];
+                   for(let i = begin; i <= end_id; ++i) {
+                       Game.find({gameID: i}).then(doc => {
+                           if(doc === null || doc === undefined) {
+                               console.log(`Couldn't find game with id ${i}. Be sure to scrape these games.`);
+                               missing_games.push(i);
+                           }
+                       });
+                   }
+                   return missing_games;
+               };
+                await dowork().then(missing_games => {
+                    console.log(`Done validating DB contents. There were ${missing_games.length} games missing. ${(missing_games.length !== 0 ? [...missing_games] : "")}`);
+                    db.close();
+                });
             });
         } else if(OPERATION === "ALL") {
             let [seasonGameIDBegin, seasonGameIDEnd] = getFullGameIDRange(2019);

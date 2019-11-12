@@ -146,7 +146,7 @@ export default {
                 padding: 25,
                 callback: function(value, index, values) {
                   if(percent === true) {
-                    return `${value}%`
+                      return `${value}%`
                   } else {
                     return value
                   }
@@ -179,9 +179,6 @@ export default {
       })
       chart.title = title
     },
-    changeAnalyzeSpan (span) {
-
-    }
   }
 }
 </script>

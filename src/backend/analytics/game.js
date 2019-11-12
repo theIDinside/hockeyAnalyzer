@@ -249,28 +249,52 @@ function EmptyNetLetUps(team, games) {
     }
 }
 
+function makeFilter(team, teams, live_result) {
+    return {
+        team: team,
+        score: (teams.home === team) ? live_result.score.home : live_result.score.away,
+        opponent: (teams.home === team) ? live_result.score.away : live_result.score.home,
+        gameTime: live_result.gameTime,
+        deficit: () => (this.score - this.opponent) < 0,
+        difference: () => this.score - this.opponent,
+    };
+}
+
 const FULL_SEASON = 81;
 /** TODO: PROTOTYPING / SKETCHING ON A LIVE RESULT ANALYSIS FUNCTION. TEST CASE, live_result = "4-2 13:47 P2" */
 async function LiveResult(live_result, teams, span=FULL_SEASON) { // live result parameter could look like this: "4-2 13:47 P2" (String)
     let home_games = API.getLastXGamesPlayedBy(span, home);
     let away_games = API.getLastXGamesPlayedBy(span, away);
-    let [score, cTime, p] = live_result.split(" ");
-    let [aScore, hScore] = score.split("-");
-    let [min, sec] = cTime.split(":");
-    // If live_result is _not_ a string, and instead an object, destructuring it, would look something like this instead
-    // let {home_score, away_score, current_time, period} = live_result;
+
+    let {score, gameTime} = live_result;
     let {home, away} = teams;
-    // TODO: one could structure a filter object like this
-    let filter = {
-        score_behind: [aScore<hScore, hScore<aScore], // [false, true]
-        score_diff: [aScore-hScore, hScore-aScore], // [2, -2]
-        time: { min: 13, sec: 47, period: 2 }, // time & period
-    };
+
+
     // TODO: Then one could use this object, to apply a filter/search on all games played, and see what outcomes came
     // in games, where similar or equal results was at the same moment in time, in that/those game/games.
-    Promise.all([home_games, away_games]).then(all_games => {
+    return Promise.all([home_games, away_games]).then(all_games => {
         let [hGames, aGames] = all_games;
-    })
+        let hGamesData = hGames.map(g => g.toGameData());
+        let aGamesData = aGames.map(g => g.toGameData());
+        let homeFilter = makeFilter(home, teams, live_result);
+        let awayFilter = makeFilter(away, teams, live_result);
+
+        let homeResult = {};
+        let awayResult = {};
+
+        if(homeFilter.deficit()) {
+            // TODO: look for all the games, where this team has had a deficit, and analyze outcomes
+        } else {
+            // TODO: look for all the games, where this team has had a lead, and analyze outcomes
+        }
+
+        if(awayFilter.deficit()) {
+            // TODO: look for all the games, where this team has had a deficit, and analyze outcomes
+        } else {
+            // TODO: look for all the games, where this team has had a lead, and analyze outcomes
+        }
+
+    });
 }
 
 class Time {
@@ -396,4 +420,4 @@ const lastXGameStats = (team, games) =>
                 }
             });
 
-module.exports = { GFGameAverage, GAGameAverage, GGameAverage, EmptyNetScoring, EmptyNetLetUps, lastXGameStats, PowerPlay, PenaltyKilling };
+module.exports = { GFGameAverage, GAGameAverage, GGameAverage, EmptyNetScoring, EmptyNetLetUps, lastXGameStats, PowerPlay, PenaltyKilling, LiveResult };

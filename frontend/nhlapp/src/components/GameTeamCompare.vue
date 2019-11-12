@@ -1,8 +1,9 @@
 <template>
   <div>
-      <v-expansion-panel>
-        <v-expansion-panel-content expand-icon="mdi-menu-down">
-          <div slot="header"><h1><b>Stats comparison</b></h1></div>
+      <v-expansion-panels>
+        <v-expansion-panel>
+        <v-expansion-panel-header expand-icon="mdi-menu-down"><h1><b>Stats comparison</b></h1></v-expansion-panel-header>
+        <v-expansion-panel-content>
           <div class="columns">
             <div class="column">
               <v-card>
@@ -32,7 +33,8 @@
             </div>
           </div>
         </v-expansion-panel-content>
-      </v-expansion-panel>
+        </v-expansion-panel>
+      </v-expansion-panels>
     </div>
 </template>
 

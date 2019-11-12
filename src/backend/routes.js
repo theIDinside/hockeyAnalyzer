@@ -314,4 +314,54 @@ let DefaultRoute = {
     }
 };
 
+function makeLiveComparator(team, data) {
+    if(team === data.away) {
+
+    } else {
+        return {
+            team: team,
+            score_diff: data.scoreHome - data.scoreAway,
+        }
+    }
+}
+
+let LiveResult = {
+    method: "POST",
+    path: "/live",
+    handler: async (request, h) => {
+        let payload = request.payload;
+        console.log(`Received payload via POST`);
+        for(let prop in payload) {
+            console.log(`Property: ${prop} = ${payload[prop]}`);
+        }
+        let {home, away, scoreHome, scoreAway, period, time} = payload;
+        let {mins, sec} = time;
+
+        let GameTime = {
+            period: period,
+            time: {
+                mins: mins,
+                secs: sec,
+            }
+        };
+        let Score = {
+            home: scoreHome,
+            away: scoreAway
+        };
+
+        let liveResult = {
+            score: Score,
+            gameTime: GameTime
+        };
+
+        let teams = {home: home, away: away};
+        // { score: { home: X, away: Y }, gameTime: { period: P, time: { mins: M, secs: S } } }
+        return await API.LiveResult(liveResult, teams).then(res => {
+
+            return {}; // return some JSON object holding all the analysis data
+        })
+
+    }
+};
+
 module.exports = [BetRoute, GamesTodayRoute, TeamRoute, DefaultRoute, AnalyzeComingGameRoute];
