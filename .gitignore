@@ -10,3 +10,5 @@ test\.js
 .db
 .code-workspaceerror.log
 error.log
+initerror.log
+commit_msg

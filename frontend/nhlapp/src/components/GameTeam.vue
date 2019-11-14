@@ -4,6 +4,16 @@
   <v-expansion-panels multiple>
 
     <v-expansion-panel>
+      <v-expansion-panel-header expand-icon="mdi-menu-down"><b>Last 5 games</b></v-expansion-panel-header>
+      <v-expansion-panel-content>
+        <div>Last 5 games</div>
+        <div>
+          <last-game-results :games="computeLastGameResults()" :team="analysis.team"></last-game-results>
+        </div>
+      </v-expansion-panel-content>
+    </v-expansion-panel>
+
+    <v-expansion-panel>
       <v-expansion-panel-header expand-icon="mdi-menu-down"><b>Game average stats</b></v-expansion-panel-header>
         <v-expansion-panel-content>
 
@@ -105,9 +115,10 @@
 <script>
 import LineChart from './charts/LineChart'
 import CircleChart from './charts/CircleChart'
-
+import LastGameResults from './charts/LastGameResults'
 export default {
   components: {
+    LastGameResults,
     LineChart,
     CircleChart
   },
@@ -138,6 +149,9 @@ export default {
      */
     PDOAverage (gaavg, saavg, gfavg, sfavg) {
       return (1 - (gaavg / saavg) + gfavg / sfavg) * 100.0
+    },
+    computeLastGameResults () {
+      return this.analysis.LastFive;
     }
   },
   created () {

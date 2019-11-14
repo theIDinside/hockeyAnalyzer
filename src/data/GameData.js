@@ -125,6 +125,42 @@ class GameData {
         }
     }
 
+    /**
+     * Returns the score in order. The returned object also has the function hadDifference, which can be utilized,
+     * in a filter operation, to check for example "Did team Home, have a lead of 3-1? Or did team Home have a deficit of 1-3?"
+     * This way, analysis for outcomes at a certain point in the game, can be done with ease.
+     * @returns {{teams: {away: *, home: *}, scoreOrder: Array, hadDifference: (function(*, *): boolean)}}
+     */
+    get scoreOrder() {
+
+        let standing = { home: 0, away: 0};
+
+        let scoreOrder = [];
+        for(let goal of this.scoringSummary) {
+            if(goal.getScoringTeam() === this.home) {
+                standing.home += 1;
+            } else {
+                standing.away += 1;
+            }
+            let score = { home: standing.home, away: standing.away, time: goal.time};
+            scoreOrder.push(score);
+        }
+
+        let res = {
+            teams: {home: this.home, away: this.away},
+            scoreOrder: scoreOrder,
+            hadDifference: (team, goal_diff) => scoreOrder.filter(standing => {
+                if(team === this.home) {
+                    return standing.home - standing.away === goal_diff;
+                } else {
+                    return standing.away - standing.home === goal_diff;
+                }
+            }).length > 0
+        };
+
+        return res; // will return something like [0:0, 0:1, 1:1, 2:1, 3:1, 4:1, 4:2]
+    }
+
     get totalScore() {
         return this.finalResult.away + this.finalResult.home;
     }
@@ -194,6 +230,15 @@ class GameData {
 
     get loser() {
         return (this.finalResult.home < this.finalResult.away) ? this.home : this.away;
+    }
+
+    get decidedInRegulation() {
+        for(let goal of this.scoringSummary) {
+            if(goal.scoringPeriod < 4) {
+                return false;
+            }
+        }
+        return true;
     }
 
     get periods() {

@@ -256,18 +256,20 @@ function makeFilter(team, teams, live_result) {
         opponent: (teams.home === team) ? live_result.score.away : live_result.score.home,
         gameTime: live_result.gameTime,
         deficit: () => (this.score - this.opponent) < 0,
-        difference: () => this.score - this.opponent,
+        difference: () => Math.abs(this.score - this.opponent),
     };
 }
 
 const FULL_SEASON = 81;
 /** TODO: PROTOTYPING / SKETCHING ON A LIVE RESULT ANALYSIS FUNCTION. TEST CASE, live_result = "4-2 13:47 P2" */
 async function LiveResult(live_result, teams, span=FULL_SEASON) { // live result parameter could look like this: "4-2 13:47 P2" (String)
+    let {home, away} = teams;
+    console.log(`Live result analysis of ${away} vs ${home}`);
     let home_games = API.getLastXGamesPlayedBy(span, home);
     let away_games = API.getLastXGamesPlayedBy(span, away);
 
     let {score, gameTime} = live_result;
-    let {home, away} = teams;
+
 
 
     // TODO: Then one could use this object, to apply a filter/search on all games played, and see what outcomes came
@@ -284,8 +286,48 @@ async function LiveResult(live_result, teams, span=FULL_SEASON) { // live result
 
         if(homeFilter.deficit()) {
             // TODO: look for all the games, where this team has had a deficit, and analyze outcomes
+            let games_with_equal_deficit = hGamesData.filter(gd => gd.scoreOrder.hadDifference(home, homeFilter.difference()));
+            let result = {
+                deficit: true, // this value is crucial, as it defines what properties  and their names the returned object will have.
+                gamesWithEqualDeficit: games_with_equal_deficit.length,
+                gamesWonAfterDeficit: {
+                  inRegulation: games_with_equal_deficit.filter(gd => gd.winner === home && gd.decidedInRegulation).length,
+                  total: games_with_equal_deficit.filter(gd => gd.winner === home).length, // those won in regulation & OT/SO
+                  difference: () => this.total - this.inRegulation
+                },
+                gamesLostAfterDeficit: {
+                    inRegulation: games_with_equal_deficit.filter(gd => gd.loser === team && gd.decidedInRegulation).length,
+                    total: games_with_equal_deficit.filter(gd => gd.loser === home).length
+                },
+                exact: { // this will also take into account, when in the game the deficit was had, and change for that parameter
+                    gamesWonAfterDeficit: {
+                        inRegulation: games_with_equal_deficit.filter(gd => gd.winner === home && gd.decidedInRegulation).length,
+                        total: games_with_equal_deficit.filter(gd => gd.winner === home).length
+                    },
+                }
+            };
+            console.log(`Found ${games_with_equal_deficit.length} games where the deficit for ${home} was ${homeFilter.difference()}`)
         } else {
             // TODO: look for all the games, where this team has had a lead, and analyze outcomes
+            let games_with_equal_lead = hGamesData.filter(gd => gd.scoreOrder.hadDifference(home, homeFilter.difference()));
+            let result = {
+                deficit: false, // this value is crucial, as it defines what properties and their names the returned object will have.
+                gamesWithEqualLead: games_with_equal_lead.length,
+                gamesWonAfterLead: {
+                    inRegulation: games_with_equal_lead.filter(gd => gd.winner === home && gd.decidedInRegulation).length,
+                    total: games_with_equal_lead.filter(gd => gd.winner === home).length // those won in regulation & OT/SO
+                },
+                gamesLostAfterLead: {
+                    inRegulation: games_with_equal_lead.filter(gd => gd.loser === team && gd.decidedInRegulation).length,
+                    total: games_with_equal_lead.filter(gd => gd.loser === home).length
+                },
+                exact: { // this will also take into account, when in the game the deficit was had, and change for that parameter
+                    gamesWonAfterLead: {
+                        inRegulation: games_with_equal_lead.filter(gd => gd.winner === home && gd.decidedInRegulation).length,
+                        total: games_with_equal_lead.filter(gd => gd.winner === home).length
+                    },
+                }
+            };
         }
 
         if(awayFilter.deficit()) {

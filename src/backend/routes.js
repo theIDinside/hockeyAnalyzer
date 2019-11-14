@@ -95,6 +95,41 @@ async function SeasonAverageAnalysis(team, isHome) {
 }
 
 /**
+ * Analyze the five last games of @param team, and for each game, analyze the opponents 5 games prior to that game,
+ * to find out, for example, what their stats was, and what possible effect that might have had on the outcome of that game
+ * that @param team was in. This way, we can see if @param team's last 5 games, were more or less flukes, or if
+ * the opponents they met, were coming into that game strong, or in a slump so to speak. This will give us a more
+ * in depth understanding of @param team's last 5 games.
+ *
+ * For example; if @param team has won it's last 5 games, we want to see, if the opponents in those 5 games, were actually
+ * in trends that were positive or negative. (This is data, that actually might be useful to plug into some AI/ML stuff
+ * but that is still kind of out of my reach of knowledge at this point.
+ * @param team
+ * @returns {Promise<void>}
+ * @constructor
+ */
+async function AnalyzeResultAndTeamsOfLastFiveGames(team) {
+    let gameSpan = 10;
+    API.getLastXGamesPlayedBy(10, team).then(games => {
+        let lastFiveGames = games.map(g => g).splice(0, 5);
+
+        // TODO:
+        // this will define what to search for. So the last game, we will search for the opponents prior
+        // five games to that, in order to see what stats the opponent had, and what the outcome was in that game,
+        // to find out, what was the stats the other team had coming in to that game, and what role it (might) play
+        // in the result in the game between team vs opponent.
+        let searchOps = lastFiveGames.map(g => g.toGameData()).map(gd => {
+            let opponent = gd.getOtherTeamName(team);
+            let datePlayed = gd.date;
+            return {
+                opponent: opponent,
+                date: datePlayed
+            };
+        })
+    })
+}
+
+/**
  *
  * @param team
  * @param isHome
@@ -122,6 +157,11 @@ async function SpanAnalysis(team, isHome) {
             lostGames = lostGames.reverse();
             let PK_data = API.PenaltyKilling(team, games); // Array of objects, like: [{total, goals, pct}, {total, goals, pct}, {total, goals, pct}, ...]
             let PP_data = API.PowerPlay(team, games);
+
+            let last_5_games = games.map(g => g);
+            last_5_games.splice(0, games.length/2);
+
+            let last_5 = last_5_games.map(g => g.toGameData()).map(gd => ({ won: gd.winner === team, opponent: gd.getOtherTeamName(team), result: gd.finalResult, date: gd.date }));
 
             let PK = {
                 trendChartData: PK_data.map(pk_stats => Number.parseFloat(pk_stats.pct.toFixed(3))),
@@ -155,6 +195,7 @@ async function SpanAnalysis(team, isHome) {
                 PP: PP,
                 EmptyNetGoals: API.EmptyNetScoring(team, empty_net_games),
                 EmptyNetLetUps: API.EmptyNetLetUps(team, lostGames),
+                LastFive: last_5,
                 passed: true
             };
         }).catch(err => {

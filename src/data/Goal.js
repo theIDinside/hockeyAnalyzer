@@ -70,6 +70,15 @@ class Goal {
             return Number.parseInt(this.period)
     }
 
+    get scoringPeriod() {
+        if (this.period === "OT")
+            return 4;
+        else if(this.period === "SO")
+            return 5;
+        else
+            return Number.parseInt(this.period)
+    }
+
     isRegularTimeGoal() {
         return this.getScoringPeriod() < 4;
     }
