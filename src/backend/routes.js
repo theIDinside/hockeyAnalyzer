@@ -1,9 +1,11 @@
 'use strict';
+const {getDivision, getConference, Conferences, Divisions} = require("../util/constants");
 const {getFullTeamName} = require("../util/utilities");
-
 const {GameInfo} = require("./models/GameInfoModel");
+const {GameData} = require('../data/GameData');
 // const {Game} = require("./models/GameModel");
 const API = require("./analytics/api").API;
+const DivisionAnalysis = API.DivisionAnalysis;
 const {dumpErrorStackTrace} = require("../util/utilities");
 
 const FULL_SEASON = 81; // Full regular season
@@ -52,12 +54,22 @@ function PDOAverage(gaavg, saavg, gfavg, sfavg) { return (1-(gaavg/saavg) + gfav
 
 
 
-async function SeasonAverageAnalysis(team, isHome) {
+async function SeasonAnalysis(team, isHome) {
     // getter function for periods
     // this getter function makes it possible to write obj.GFA.period(1) and get the goals for average for period 1,
     // where obj is the returned object from this function
     try {
         return await API.getAllGamesPlayedBy(team).then(games => {
+            let gameDatas = games.map(g => g.toGameData());
+            let teamInfo = {
+                name: team,
+                division: getDivision(team),
+                conference: getConference(team),
+            };
+
+            let divAnalysis = new DivisionAnalysis(team);
+            divAnalysis.analyzeGameData(gameDatas);
+
             let r = {
                 team: team,
                 GFA: {
@@ -75,7 +87,9 @@ async function SeasonAverageAnalysis(team, isHome) {
                 SAA: {
                     periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getShotsByPeriod(g.toGameData().getOtherTeamName(team), p)).reduce((res, shots) => res + shots, 0) / games.length),
                     game: games.map(g => g.toGameData().getShotsBy(g.toGameData().getOtherTeamName(team))).reduce((res, shots) => res + shots, 0) / games.length,
-                } // Shots against [periods...], game
+                },
+                divisionAnalysis: divAnalysis
+                // Shots against [periods...], game
                 /*
                 Corsi: CorsiAverage(this.SFA.game, this.SAA.game),
                 CorsiPct: CorsiAveragePct(this.SFA.game, this.SAA.game),
@@ -94,6 +108,18 @@ async function SeasonAverageAnalysis(team, isHome) {
     }
 }
 
+function calculateAnalysisDifference(valuesA, valuesB) {
+    return { // we take the average of the 5 game trend, calculate diffs between this abs value and the average
+        SF: valuesA.SF - valuesB.SFA,
+        SA: valuesA.SA - valuesB.SAA,
+        GF: valuesA.GF - valuesB.GFA,
+        GA: valuesA.GA - valuesB.GAA,
+        Save: valuesA.Save - valuesB.Save,
+        PDO: valuesA.PDO - valuesB.PDO,
+        Corsi: valuesA.Corsi - valuesB.Corsi
+    };
+}
+
 /**
  * Analyze the five last games of @param team, and for each game, analyze the opponents 5 games prior to that game,
  * to find out, for example, what their stats was, and what possible effect that might have had on the outcome of that game
@@ -109,28 +135,185 @@ async function SeasonAverageAnalysis(team, isHome) {
  * @constructor
  */
 async function AnalyzeResultAndTeamsOfLastFiveGames(team) {
-    let gameSpan = 10;
-    API.getLastXGamesPlayedBy(10, team).then(games => {
+    return await API.getLastXGamesPlayedBy(10, team).then(games => {
         let lastFiveGames = games.map(g => g).splice(0, 5);
-
         // TODO:
         // this will define what to search for. So the last game, we will search for the opponents prior
         // five games to that, in order to see what stats the opponent had, and what the outcome was in that game,
         // to find out, what was the stats the other team had coming in to that game, and what role it (might) play
         // in the result in the game between team vs opponent.
-        let searchOps = lastFiveGames.map(g => g.toGameData()).map(gd => {
-            let opponent = gd.getOtherTeamName(team);
-            let datePlayed = gd.date;
-            return {
-                opponent: opponent,
-                date: datePlayed
-            };
-        })
-    })
+        let result = lastFiveGames.map(g => g.toGameData()).map(async gd => {
+            let p_oppAnalysis = TrendAnalysisBefore(gd.getOtherTeamName(team), gd.date, 5);     // TODO: Define & Implement
+            let p_teamAnalysis = TrendAnalysisBefore(team, gd.date, 5);                  // TODO: Define & Implement
+            return await Promise.all([p_oppAnalysis, p_teamAnalysis]).then(values => {
+                let [oppAnalysis, teamAnalysis] = values;
+                let opponentThisGame = gd.getAnalysisData(oppAnalysis.team);
+                let teamThisGame = gd.getAnalysisData(teamAnalysis.team);
+
+                let opponentDifference = calculateAnalysisDifference(opponentThisGame, oppAnalysis);
+                let teamDifference = calculateAnalysisDifference(teamThisGame, teamAnalysis);
+
+                let tAnalysis = {
+                    game: teamThisGame,
+                    trend: teamAnalysis
+                };
+                let oAnalysis = {
+                    game: opponentThisGame,
+                    trend: oppAnalysis
+                };
+
+                  // TODO: Define & Implement
+                return createComparisonAfterOutcome(tAnalysis, oAnalysis, gd);
+            });
+
+
+        });
+        return result;
+    });
+}
+
+/// Used when analyzing 1 teams past 5 games, and the opponents of those 5 games trends/game stats.
+class ResultAnalysis {
+
+    constructor(teamTrendData, opponentTrendData, teamGameData, opponentGameData) {
+        this.team.trend = teamTrendData;
+        this.team.game = teamGameData;
+        this.opponent.trend = opponentTrendData;
+        this.opponent.game = opponentGameData;
+    }
+
+    get teamGameDifferences() {
+        let arr = [];
+        for(let propertyName in this.team.game) {
+            arr[propertyName] = { team}
+        }
+
+        return {
+            team: {
+
+            },
+            opponent: {
+
+            }
+        }
+    }
+
+    get teamTrendDifferences() {
+
+    }
 }
 
 /**
  *
+ * @param {Object} teamAnalysis
+ * @param {Object} oppAnalysis
+ * @param {GameData} gameData
+ * @return {Object}
+ */
+function createComparisonAfterOutcome(teamAnalysis, oppAnalysis, gameData) {
+    // If a value is negative, it means the team analyzed for is better & did better
+    // If a value is positive, the opposite is obviously true
+
+    let winner = gameData.winner;
+
+    let TrendGameDifferenceTeam = {
+        team: teamAnalysis.team,
+        GAA: teamAnalysis.trend.GAA - teamAnalysis.game.GAA,
+        GFA: teamAnalysis.trend.GFA - teamAnalysis.game.GFA,
+        SAA: teamAnalysis.trend.SAA - teamAnalysis.game.SAA,
+        SFA: teamAnalysis.trend.SFA - teamAnalysis.game.SFA,
+        Save: teamAnalysis.trend.Save - teamAnalysis.game.Save,
+        PDO: teamAnalysis.trend.PDO - teamAnalysis.game.PDO,
+        Corsi: teamAnalysis.trend.Corsi - teamAnalysis.game.Corsi
+    };
+
+    let TrendGameDifferenceOpponent = {
+        team:   oppAnalysis.team,
+        GAA:    oppAnalysis.trend.GAA - oppAnalysis.game.GAA,
+        GFA:    oppAnalysis.trend.GFA - oppAnalysis.game.GFA,
+        SAA:    oppAnalysis.trend.SAA - oppAnalysis.game.SAA,
+        SFA:    oppAnalysis.trend.SFA - oppAnalysis.game.SFA,
+        Save:   oppAnalysis.trend.Save - oppAnalysis.game.Save,
+        PDO:    oppAnalysis.trend.PDO - oppAnalysis.game.PDO,
+        Corsi:  oppAnalysis.trend.Corsi - oppAnalysis.game.Corsi
+    };
+
+    let trendDifferencesTeams = {
+        teams: { team: teamAnalysis.team, opponent: oppAnalysis.team },
+        GAA: teamAnalysis.trend.GAA - oppAnalysis.trend.GAA,
+        GFA: teamAnalysis.trend.GFA - oppAnalysis.trend.GFA,
+        SAA: teamAnalysis.trend.SAA - oppAnalysis.trend.SAA,
+        SFA: teamAnalysis.trend.SFA - oppAnalysis.trend.SFA,
+        Save: teamAnalysis.trend.Save - oppAnalysis.trend.Save,
+        PDO: teamAnalysis.trend.PDO - oppAnalysis.trend.PDO,
+        Corsi: teamAnalysis.trend.Corsi - oppAnalysis.trend.Corsi
+    };
+    let gameStatsDifferencesTeams = {
+        teams: { team: teamAnalysis.team, opponent: oppAnalysis.team },
+        GAA: teamAnalysis.game.GAA - oppAnalysis.game.GAA,
+        GFA: teamAnalysis.game.GFA - oppAnalysis.game.GFA,
+        SAA: teamAnalysis.game.SAA - oppAnalysis.game.SAA,
+        SFA: teamAnalysis.game.SFA - oppAnalysis.game.SFA,
+        Save: teamAnalysis.game.Save - oppAnalysis.game.Save,
+        PDO: teamAnalysis.game.PDO - oppAnalysis.game.PDO,
+        Corsi: teamAnalysis.game.Corsi - oppAnalysis.game.Corsi
+    };
+
+    if(winner === teamAnalysis.team) {
+        let trendsBetterThanGame = {
+            GAA: (TrendGameDifferenceTeam.GAA > 0),
+            GFA: (TrendGameDifferenceTeam.GFA > 0),
+            SAA: (TrendGameDifferenceTeam.SAA > 0),
+            SFA: (TrendGameDifferenceTeam.SFA > 0),
+            Save: (TrendGameDifferenceTeam.Save > 0),
+            PDO: (TrendGameDifferenceTeam.PDO > 0),
+            Corsi: (TrendGameDifferenceTeam.Corsi > 0),
+        };
+        let trendsBetterThanOpponent = {
+            GAA: teamAnalysis.trend.GAA > oppAnalysis.trend.GAA,
+            GFA: teamAnalysis.trend.GFA > oppAnalysis.trend.GFA,
+            SAA: teamAnalysis.trend.SAA > oppAnalysis.trend.SAA,
+            SFA: teamAnalysis.trend.SFA > oppAnalysis.trend.SFA,
+            Save: teamAnalysis.trend.Save > oppAnalysis.trend.Save,
+            PDO: teamAnalysis.trend.PDO > oppAnalysis.trend.PDO,
+            Corsi: teamAnalysis.trend.Corsi > oppAnalysis.trend.Corsi,
+        };
+
+    } else {
+
+    }
+}
+
+
+/**
+ * Returns a trend analysis of the last @param span games before date.
+ * @param {string} team
+ * @param {Date} date
+ * @param {number} span
+ * @constructor
+ * @return {Object}
+ */
+async function TrendAnalysisBefore(team, date, span) {
+    const PF = (str) => Number.parseFloat(str); // local rebinding of Number.parseFloat(...). Makes code easier to read
+
+    return API.findLastXGamesByTeamBefore(team, date, span).then(games => {
+        let gds = games.map(g => g.toGameData());
+        let GAGameAverage = PF((gds.map(gd => gd.getGoalsBy(gd.getOtherTeamName(team))).reduce((res, goals) => res + goals) / span).toFixed(4));
+        let GFGameAverage = PF((gds.map(gd => gd.getGoalsBy(team)).reduce((res, goals) => res + goals) / span).toFixed(4));
+        let SAGameAverage = PF((gds.map(gd => gd.getShotsBy(gd.getOtherTeamName(team))).reduce((res, shots) => res+shots) / span).toFixed(4));
+        let SFGameAverage = PF((gds.map(gd => gd.getShotsBy(team)).reduce((res, shots) => res + shots) / span).toFixed(4));
+        let SavePercentAverage = 1-PF(( (gds.map(gd => gd.getGoalsBy(gd.getOtherTeamName(team))).reduce((res, goals) => res + goals)) / (gds.map(gd => gd.getShotsBy(gd.getOtherTeamName(team))).reduce((res, shots) => res+shots))).toFixed(4));
+        let Corsi = CorsiAverage(SFGameAverage, SAGameAverage);
+        let PDO = PDOAverage(GAGameAverage, SAGameAverage, GFGameAverage, SFGameAverage);
+        let result = { team: team, GAA: GAGameAverage, GFA: GFGameAverage, SAA: SAGameAverage, SFA: SFGameAverage, PDO: PDO, Corsi: Corsi, Save: SavePercentAverage };
+        return result;
+    });
+}
+
+
+
+
+/**
  * @param team
  * @param isHome
  * @returns { Promise< {
@@ -276,12 +459,13 @@ let AnalyzeComingGameRoute = {
             return await Promise.all(
             [SpanAnalysis(gameInfo.teams.home, true),
                     SpanAnalysis(gameInfo.teams.away, false),
-                    SeasonAverageAnalysis(gameInfo.teams.home, true),
-                    SeasonAverageAnalysis(gameInfo.teams.away, false)]).then(values => {
+                    SeasonAnalysis(gameInfo.teams.home, true),
+                    SeasonAnalysis(gameInfo.teams.away, false)]).then(values => {
             let [homeAnalysis, awayAnalysis, homeSeason, awaySeason] = values;
-            console.log(`Season object verifier: ${homeSeason.GFA!==undefined && awaySeason.GFA!==undefined && awaySeason.GFA!==null && homeSeason.GFA!==null}, Type of awaySeason && homeSeason: ${typeof homeSeason}/${typeof awaySeason}.`);
-            console.log(`Home season SFA: ${homeSeason.SFA.game}`);
+            let homeTeam = { name: gameInfo.teams.home, division: getDivision(gameInfo.teams.home) };
+            let awayTeam = { name: gameInfo.teams.away, division: getDivision(gameInfo.teams.away) };
                 return {
+                    teams: {home: homeTeam, away: awayTeam}, // just for division data
                     homeTeamSpanAnalysis: homeAnalysis,
                     homeTeamSeasonAnalysis: homeSeason,
                     awayTeamSpanAnalysis: awayAnalysis,

@@ -169,6 +169,9 @@ class GameData {
         return this.finalResult.away + this.finalResult.home;
     }
 
+    PDOAverage(gaavg, saavg, gfavg, sfavg) { return (1-(gaavg/saavg) + gfavg/sfavg) * 100.0; }
+
+
     getTeamGameStats(team) {
         return {
             team: (team === this.home) ? this.home : this.away,
@@ -181,7 +184,32 @@ class GameData {
             blockedShots: (team === this.home) ? this.blockedShots.home : this.blockedShots.away,
             giveAways: (team === this.home) ? this.giveAways.home : this.giveAways.away,
         }
+    }
 
+    getAnalysisData(team) {
+        if(team === this.home || team === this.away) {
+            return {
+                SF: this.getShotsBy(team),
+                SA: this.getShotsBy(this.getOtherTeamName(team)),
+                GF: this.getGoalsBy(team),
+                GA: this.getGoalsBy(this.getOtherTeamName(team)),
+                Save: 1-(gd.getGoalsBy(this.getOtherTeamName(team)) / gd.getShotsBy(this.getOtherTeamName(team))),
+                PDO: this.getPDO(team),
+                Corsi: 100.0 * (this.getShotsBy(team) / (this.getShotsBy(team) + this.getShotsBy(this.getOtherTeamName(team))))
+            };
+        } else {
+            throw new Error(`Teams playing in this game, Home ${this.home} - Away: ${this.away}. Provided search criteria was for team: ${team}`);
+        }
+    }
+
+    getPDO(team) {
+        if(team === this.home) {
+            return (1-(this.getGoalsBy(this.away)/this.getShotsBy(this.away)) + (this.getGoalsBy(this.home))/this.getShotsBy(this.home)) * 100.0;
+        } else if(team === this.away) {
+            return (1-(this.getGoalsBy(this.home)/this.getShotsBy(this.home)) + (this.getGoalsBy(this.away))/this.getShotsBy(this.away)) * 100.0;
+        } else {
+            throw new Error(`Teams playing in this game, Home ${this.home} - Away: ${this.away}. Provided search criteria was for team: ${team}`);
+        }
     }
 
     getGoalsByPeriod(team, period) {

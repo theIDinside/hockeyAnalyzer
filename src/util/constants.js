@@ -48,6 +48,66 @@ teams["VGK"] = teams["GOLDEN KNIGHTS"] = teams["KNIGHTS"] = "Vegas Golden Knight
 teams["FLA"] = teams["PANTHERS"] = "Florida Panthers";
 teams["NSH"] = teams["PREDATORS"] = "Nashville Predators";
 
+const Divisions = ["Pacific", "Central", "Atlantic", "Metropolitan"];
+const Conferences = ["Western", "Eastern"];
+
+function getDivision(team) {
+    let t = "";
+    if(team.length === 3) {
+        t = getFullTeamName(team);
+    } else {
+        t = team;
+    }
+    switch(t) {
+        case "Anaheim Ducks":
+        case "Arizona Coyotes":
+        case "Calgary Flames":
+        case "Edmonton Oilers":
+        case "Los Angeles Kings":
+        case "San Jose Sharks":
+        case "Vancouver Canucks":
+        case "Vegas Golden Knights":
+            return "Pacific";
+        case "Chicago Blackhawks":
+        case "Colorado Avalanche":
+        case "Dallas Stars":
+        case "Minnesota Wild":
+        case "Nashville Predators":
+        case "St. Louis Blues":
+        case "Winnipeg Jets":
+            return "Central";
+        case "Boston Bruins":
+        case "Buffalo Sabres":
+        case "Detroit Red Wings":
+        case "Florida Panthers":
+        case "Montreal Canadiens":
+        case "Ottawa Senators":
+        case "Tampa Bay Lightning":
+        case "Toronto Maple Leafs":
+            return "Atlantic";
+        case "Carolina Hurricanes":
+        case "Columbus Blue Jackets":
+        case "New Jersey Devils":
+        case "New York Islanders":
+        case "New York Rangers":
+        case "Philadelphia Flyers":
+        case "Pittsburgh Penguins":
+        case "Washington Capitals":
+            return "Metropolitan";
+    }
+}
+
+function getConference(team) {
+    let division = getDivision(team);
+    if(division === "Pacific" || division == "Central") {
+        return "Western";
+    } else if(division === "Atlantic" || division === "Metropolitan") {
+        return "Eastern";
+    } else {
+        throw new Error(`Couldn't find conference based on divison, for team ${team}`);
+    }
+}
+
 const getFullTeamName = (abbr) => teams[abbr.toUpperCase()];
 function abbreviateName(team) {
     switch(team) {
@@ -120,5 +180,8 @@ module.exports = {
     teamKeys: teamKeys,
     seasonStart: seasonStart,
     getFullTeamName: getFullTeamName,
-    getSeasonStart: getSeasonStart
+    getSeasonStart: getSeasonStart,
+    getDivision: getDivision,
+    getConference: getConference,
+    Divisions, Conferences
 };
