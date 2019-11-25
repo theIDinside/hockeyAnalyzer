@@ -1,3 +1,5 @@
+const {GameTime} = require("../backend/analytics/game");
+
 const {teams} = require("../util/constants");
 const {Time, MakeTime} = require("../util/Time");
 
@@ -85,6 +87,14 @@ class Goal {
 
     isGood() {
         return this.goalNumber !== "-";
+    }
+
+    /**
+     * Converts this object's time value (which is min:sec) to the GameTime type, which includes period as member.
+     * @return { GameTime}
+     */
+    get gameTime() {
+        return new GameTime(this.time.mins, this.time.secs, this.period);
     }
 
     isEmptyNet() {

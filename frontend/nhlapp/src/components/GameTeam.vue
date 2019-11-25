@@ -8,7 +8,7 @@
       <v-expansion-panel-content>
         <div>Last 5 games</div>
         <div>
-          <last-game-results :games="computeLastGameResults()" :team="analysis.team"></last-game-results>
+          <last-game-results :games="computeLastGameResults()" :five-game-span="analysis.LastFivePlayedSpan" :last-played="analysis.LastFive[4].date" :team="analysis.team"></last-game-results>
         </div>
       </v-expansion-panel-content>
     </v-expansion-panel>
@@ -78,6 +78,7 @@
               Empty net goals were let up in {{ analysis.EmptyNetLetUps.ENLetUps }} games out of {{ analysis.EmptyNetLetUps.games }} lost games. Empty net let up percentage: {{ analysis.EmptyNetLetUps.pct.toFixed(2) }}%
               </div>
             </v-expansion-panel-content>
+          </v-expansion-panel>
 
             <v-expansion-panel>
               <v-expansion-panel-header expand-icon="mdi-menu-down">Season Averages</v-expansion-panel-header>
@@ -103,7 +104,28 @@
             </v-expansion-panel-content>
             </v-expansion-panel>
 
-          </v-expansion-panel>
+            <v-expansion-panel>
+                <v-expansion-panel-header expand-icon="mdi-menu-down">Stats against teams in {{season.divisionAnalysis.division}} Divsion</v-expansion-panel-header>
+                <v-expansion-panel-content>
+                    Games played against {{season.divisionAnalysis.division}} teams: {{season.divisionAnalysis.wins + season.divisionAnalysis.losses}}
+                    <div class="columns">
+                        <div class="column">
+                            Wins: {{season.divisionAnalysis.wins}}<br>
+                            Total goals for: {{season.divisionAnalysis.totals.GF}}<br>
+                            Total shots for: {{season.divisionAnalysis.totals.SF}}<br>
+                            Goals for average: {{season.divisionAnalysis.averages.GFA.toFixed(3)}}<br>
+                        </div>
+                        <div class="column">
+                            Losses: {{season.divisionAnalysis.losses}}<br>
+                            Total goals against: {{season.divisionAnalysis.totals.GA}}<br>
+                            Total shots against: {{season.divisionAnalysis.totals.SA}}<br>
+                            Goals against average: {{season.divisionAnalysis.averages.GAA.toFixed(3)}}<br>
+                        </div>
+                    </div>
+
+                </v-expansion-panel-content>
+            </v-expansion-panel>
+
         </v-card>
     </v-expansion-panel-content>
     </v-expansion-panel>
@@ -126,7 +148,8 @@ export default {
   props: {
     analysis: Object,
     season: Object,
-    team: String
+    team: String,
+    opponent: String,
   },
   methods: {
     /**
@@ -155,7 +178,7 @@ export default {
     }
   },
   created () {
-    console.log(`Team ${this.team}. Total goals/game average: ${this.analysis.GAverageTotal.game.trendChartData}`)
+
   }
 }
 </script>

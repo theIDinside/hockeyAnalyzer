@@ -81,8 +81,7 @@ export default {
     }
   },
   mounted() {
-    console.log(`Penalties taken/amount average for away: ${[...this.awayAnalysis.PK.penalties_amount_avg]}`)
-    console.log(`Penalties taken/amount average for home: ${[...this.homeAnalysis.PK.penalties_amount_avg]}`)
+
   }
 }
 </script>

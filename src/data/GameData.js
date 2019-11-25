@@ -9,22 +9,31 @@ function ThrowError(gameData, team, message="") {
 
 }
 
+
+/** TODO: Fix the home.totals property. This should really be home.total, but for now it will stay totals, as it is saved as such in the DB */
+
+/** TYPEDEFS
+ * @typedef PowerPlay
+ * @property {{ goals: {number}, total: {number} }} away The amount of power play goals made, and total PPs
+ * @property {{ goals: {number}, totals: {number} }} home The amount of power play goals made, and total PPs
+ */
+
 class GameData {
     /**
      *
-     * @param id
-     * @param away
-     * @param home
-     * @param date
-     * @param finalResult
-     * @param shotsOnGoal
-     * @param faceOffWins
-     * @param powerPlay
-     * @param penaltyMinutes
-     * @param hits
-     * @param blockedShots
-     * @param giveAways
-     * @param scoringSummary {Goal[]}
+     * @param {number} id
+     * @param {string} away
+     * @param {string} home
+     * @param {Data} date
+     * @param {Object} finalResult
+     * @param {Object[]} shotsOnGoal
+     * @param {Object} faceOffWins
+     * @param { PowerPlay } powerPlay
+     * @param {} penaltyMinutes
+     * @param {} hits
+     * @param {} blockedShots
+     * @param {} giveAways
+     * @param {} scoringSummary {Goal[]}
      */
     constructor(id, away, home, date, finalResult, shotsOnGoal, faceOffWins, powerPlay, penaltyMinutes, hits, blockedShots, giveAways, scoringSummary) {
         this.id = id;
@@ -81,7 +90,7 @@ class GameData {
             ThrowError(this, team);
     }
 
-    getOtherTeamName(team) { return (team === this.away) ? this.home : this.away; }
+    getOpponentTeamName(team) { return (team === this.away) ? this.home : this.away; }
 
     getPowerPlays(team) {
         if(team === this.away) {
@@ -126,10 +135,16 @@ class GameData {
     }
 
     /**
+     * @typedef Scoring
+     * @property { number } home - Home score
+     * @property { number } away - Away score
+     * @property { GameTime } time - Goal scored at time
+     * @property { Goal } goal - The goal object type, defined in data/Goal.js.
+     *
      * Returns the score in order. The returned object also has the function hadDifference, which can be utilized,
      * in a filter operation, to check for example "Did team Home, have a lead of 3-1? Or did team Home have a deficit of 1-3?"
      * This way, analysis for outcomes at a certain point in the game, can be done with ease.
-     * @returns {{teams: {away: *, home: *}, scoreOrder: Array, hadDifference: (function(*, *): boolean)}}
+     * @return {{teams: {away: string, home: string}, scoreOrder: Scoring[], removeStandingsPrior: (function(string, number): Scoring[]), hadDifference: (function(*, *): boolean)}}
      */
     get scoreOrder() {
 
@@ -142,20 +157,41 @@ class GameData {
             } else {
                 standing.away += 1;
             }
-            let score = { home: standing.home, away: standing.away, time: goal.time};
+            let score = { home: standing.home, away: standing.away, time: goal.gameTime, goal: goal };
             scoreOrder.push(score);
         }
 
         let res = {
             teams: {home: this.home, away: this.away},
             scoreOrder: scoreOrder,
-            hadDifference: (team, goal_diff) => scoreOrder.filter(standing => {
+            hadDifference: (team, goal_diff) => this.scoreOrder.filter(standing => {
                 if(team === this.home) {
                     return standing.home - standing.away === goal_diff;
                 } else {
                     return standing.away - standing.home === goal_diff;
                 }
-            }).length > 0
+            }).length > 0,
+            removeStandingsPrior: (team, goal_diff) => { // removes standings in game, that was before goal_diff for team
+              let deleteCount = 0;
+              for(let score of this.scoreOrder) {
+                  if(team === this.home) {
+                      if(score.home - score.away === goal_diff) {
+                          break;
+                      } else {
+                          deleteCount++;
+                      }
+                  } else {
+                      if(score.away - score.home === goal_diff) {
+                          break;
+                      } else {
+                          deleteCount++;
+                      }
+                  }
+              }
+              let res = this.scoreOrder.map(s => s);
+              res.splice(0, deleteCount);
+              return res;
+            },
         };
 
         return res; // will return something like [0:0, 0:1, 1:1, 2:1, 3:1, 4:1, 4:2]
@@ -168,9 +204,6 @@ class GameData {
     get goals() {
         return this.finalResult.away + this.finalResult.home;
     }
-
-    PDOAverage(gaavg, saavg, gfavg, sfavg) { return (1-(gaavg/saavg) + gfavg/sfavg) * 100.0; }
-
 
     getTeamGameStats(team) {
         return {
@@ -190,12 +223,12 @@ class GameData {
         if(team === this.home || team === this.away) {
             return {
                 SF: this.getShotsBy(team),
-                SA: this.getShotsBy(this.getOtherTeamName(team)),
+                SA: this.getShotsBy(this.getOpponentTeamName(team)),
                 GF: this.getGoalsBy(team),
-                GA: this.getGoalsBy(this.getOtherTeamName(team)),
-                Save: 1-(gd.getGoalsBy(this.getOtherTeamName(team)) / gd.getShotsBy(this.getOtherTeamName(team))),
+                GA: this.getGoalsBy(this.getOpponentTeamName(team)),
+                Save: 1-(gd.getGoalsBy(this.getOpponentTeamName(team)) / gd.getShotsBy(this.getOpponentTeamName(team))),
                 PDO: this.getPDO(team),
-                Corsi: 100.0 * (this.getShotsBy(team) / (this.getShotsBy(team) + this.getShotsBy(this.getOtherTeamName(team))))
+                Corsi: 100.0 * (this.getShotsBy(team) / (this.getShotsBy(team) + this.getShotsBy(this.getOpponentTeamName(team))))
             };
         } else {
             throw new Error(`Teams playing in this game, Home ${this.home} - Away: ${this.away}. Provided search criteria was for team: ${team}`);

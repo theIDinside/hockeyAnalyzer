@@ -5,8 +5,9 @@ const {dateStringify} = require("../../util/utilities");
 const {Game} = require("../models/GameModel");
 const {GameInfo, findTodaysGames} = require("../models/GameInfoModel");
 const {GameData} = require("../../data/GameData");
-
+const {Time} = require('../../util/Time')
 const GameAPI = require("./game");
+const GameTime = GameAPI.GameTime;
 const PeriodAPI = require("./period");
 const SeasonAPI = require("./season");
 
@@ -136,7 +137,7 @@ class DivisionAnalysis {
     constructor(team) {
         this.team = team;
         this.conference = getConference(team);
-        this.division = getDivision(team;
+        this.division = getDivision(team);
         this.divWins = [];
         this.divLosses = [];
         this.divGA = [];
@@ -157,7 +158,9 @@ class DivisionAnalysis {
     }
 
     /**
-     *
+     * Initializes the analysis, and analyzes the passed in GameData[] parameter. This method must be called
+     * in order to actually contain any data. This is done explicitly different reasons (wanting to set up storage
+     * for the analysis, before actually having the GameData ready for example).
      * @param {GameData[]} gameDatas
      */
     analyzeGameData(gameDatas) {
@@ -166,7 +169,7 @@ class DivisionAnalysis {
         }
         this.games = gameDatas.length;
         gameDatas.forEach(gd => {
-            let opp = gd.getOtherTeamName(this.team);
+            let opp = gd.getOpponentTeamName(this.team);
             let opponentDivision = getDivision(opp);
             if(gd.winner === this.team)
                 this.divWins[opponentDivision] += 1;
@@ -214,7 +217,7 @@ class DivisionAnalysis {
             wins: this.divWins[div],
             losses: this.divLosses[div],
             averages: {
-                GAA: this.getDivGAA(div)
+                GAA: this.getDivGAA(div),
                 GFA: this.getDivGFA(div),
                 SAA: this.getDivSAA(div),
                 SFA: this.getDivSFA(div)
@@ -226,6 +229,7 @@ class DivisionAnalysis {
                 SF: this.divSF[div]
             }
         }
+        return result;
     }
 }
 

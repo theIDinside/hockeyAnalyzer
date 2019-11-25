@@ -96,7 +96,7 @@ function GAGameAverage(team, games) {
             (games
                 .filter((g, i) => i <= (span+index) && i > index)
                 .map(g => g.toGameData())
-                .map(gd => gd.getGoalsBy(gd.getOtherTeamName(team)))
+                .map(gd => gd.getGoalsBy(gd.getOpponentTeamName(team)))
                 .reduce((res, goals) => res + goals, 0) / span).toFixed(4));
     return {
         games: span,
@@ -256,8 +256,71 @@ function makeFilter(team, teams, live_result) {
         opponent: (teams.home === team) ? live_result.score.away : live_result.score.home,
         gameTime: live_result.gameTime,
         deficit: () => (this.score - this.opponent) < 0,
-        difference: () => Math.abs(this.score - this.opponent),
+        difference: () => this.score - this.opponent,
     };
+}
+
+
+/**
+ * TODO: implement function
+ * This function analyzes solely games that are played back to back, to get a sense of understanding
+ * how this teams different Averages changes, when playing games back to back. Since NHL is structured, in
+ * home campaigns/away campaigns, it's often rather easy to see results when a team plays back to back at home, vs away.
+ *
+ * However, the parameter games, does not need to only consist of either home or away games.
+ * @param team
+ * @param games
+ */
+function analyzeBackToBackGames(team, games) {
+
+}
+
+/**
+ * @typedef {Object} Standing An object used to describe current live result in a game, between a team and it's opponent
+ * @property {number} team Current score, for team which we are analyzing for.
+ * @property {number} opponent Current opponent team score
+ *
+ * @param { string }        team - The team name of type string, for which we are analyzing games for.
+ * @param { GameData[] }    games - The game data for the games we are analyzing.
+ * @param { Standing }      standing - The current score, for which we are analyzing previous games and comparing for.
+ * @param { GameTime }      gameTime - What time, in what period the current score is in.
+ */
+function outcomeAfterResultAt(team, games, standing, gameTime) {
+    let teamScore = standing.team;
+    let opponentScore = standing.opponent;
+    let goalDiff = teamScore - opponentScore;
+    let outcome = {
+        team: team,
+        standing: standing,
+        lost: [],
+        won: [],
+        games_analyzed: games.length,
+        push_win: (res) => this.won.push(res),
+        push_loss: (res) => this.lost.push(res),
+    };
+
+    games.filter(gd => gd.scoreOrder.hadDifference(team, goalDiff)).forEach(gd => {
+        let scoreOrder = gd.scoreOrder.removeStandingsPrior(team, goalDiff); // returns only the
+        if(gd.winner === team) {
+            let winningOutcome = {
+                inRegulation: gd.decidedInRegulation,
+                atHome: gd.home === team,
+                result: { team: gd.getGoalsBy(team), opponent: gd.getGoalsBy(gd.getOpponentTeamName(team)) },
+                timeInGame: scoreOrder[0].goal.gameTime
+            };
+            outcome.push_win(winningOutcome);
+        } else {
+            let losingOutcome = {
+                inRegulation: gd.decidedInRegulation,
+                atHome: gd.home === team,
+                result: { team: gd.getGoalsBy(team), opponent: gd.getGoalsBy(gd.getOpponentTeamName(team)) },
+                timeInGame: scoreOrder[0].goal.gameTime
+            };
+            outcome.push_loss(losingOutcome);
+        }
+    });
+
+    return outcome;
 }
 
 const FULL_SEASON = 81;
@@ -284,6 +347,9 @@ async function LiveResult(live_result, teams, span=FULL_SEASON) { // live result
         let homeResult = {};
         let awayResult = {};
 
+        let outcomesHomeTeam = outcomeAfterResultAt(home, hGamesData, {team: score.home, opponent: score.away}, gameTime);
+        let outcomesAwayTeam = outcomeAfterResultAt(away, aGamesData, {team: score.away, opponent: score.home}, gameTime);
+
         if(homeFilter.deficit()) {
             // TODO: look for all the games, where this team has had a deficit, and analyze outcomes
             let games_with_equal_deficit = hGamesData.filter(gd => gd.scoreOrder.hadDifference(home, homeFilter.difference()));
@@ -301,8 +367,8 @@ async function LiveResult(live_result, teams, span=FULL_SEASON) { // live result
                 },
                 exact: { // this will also take into account, when in the game the deficit was had, and change for that parameter
                     gamesWonAfterDeficit: {
-                        inRegulation: games_with_equal_deficit.filter(gd => gd.winner === home && gd.decidedInRegulation).length,
-                        total: games_with_equal_deficit.filter(gd => gd.winner === home).length
+                        inRegulation: 0,
+                        total: 0
                     },
                 }
             };
@@ -339,7 +405,7 @@ async function LiveResult(live_result, teams, span=FULL_SEASON) { // live result
     });
 }
 
-class Time {
+class GameTime {
     /**
      *
      * @param min {number}
@@ -407,11 +473,11 @@ async function AnalyzePatterns(team, games) {
     let pattern_filter = { // TODO: This is just an example filter object
             greatest_pickup: {
                 value: 2,
-                time: new Time(13, 42, 2)
+                time: new GameTime(13, 42, 2)
             },
             greatest_loss: {
                 value: 2,
-                time: new Time(13, 42, 2)
+                time: new GameTime(13, 42, 2)
             }
     };
 }
@@ -462,4 +528,4 @@ const lastXGameStats = (team, games) =>
                 }
             });
 
-module.exports = { GFGameAverage, GAGameAverage, GGameAverage, EmptyNetScoring, EmptyNetLetUps, lastXGameStats, PowerPlay, PenaltyKilling, LiveResult };
+module.exports = { GFGameAverage, GAGameAverage, GGameAverage, EmptyNetScoring, EmptyNetLetUps, lastXGameStats, PowerPlay, PenaltyKilling, LiveResult, GameTime, outcomeAfterResultAt, analyzeBackToBackGames };

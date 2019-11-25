@@ -60,7 +60,7 @@ export default {
           pointBackgroundColor: 'white',
           borderWidth: 1,
           pointBorderColor: '#249EBF',
-          data: [...this.dataSet.trendChartData]
+          data: []
         }],
         options: {
           scales: {

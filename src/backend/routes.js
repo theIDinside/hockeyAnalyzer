@@ -53,6 +53,8 @@ function CorsiAveragePct(favg, aavg) { return favg / (favg+aavg); }
 function PDOAverage(gaavg, saavg, gfavg, sfavg) { return (1-(gaavg/saavg) + gfavg/sfavg) * 100.0; }
 
 
+const ms = 1000;
+const datesIsBackToBack = (da, db) => Math.round(Math.abs(db - da/(60*60*24 * ms))) === 1;
 
 async function SeasonAnalysis(team, isHome) {
     // getter function for periods
@@ -61,11 +63,21 @@ async function SeasonAnalysis(team, isHome) {
     try {
         return await API.getAllGamesPlayedBy(team).then(games => {
             let gameDatas = games.map(g => g.toGameData());
-            let teamInfo = {
-                name: team,
-                division: getDivision(team),
-                conference: getConference(team),
-            };
+
+            let backToBackGames = [];
+            let i = 0;
+            let stop = gameDatas.length-1;
+            while(i < stop) {
+                let dA = gameDatas[i].date;
+                let dB = gameDatas[i+1].date;
+                if(datesIsBackToBack(dA, dB)) { backToBackGames.push(gameDatas[i++]); backToBackGames.push(gameDatas[i]); }
+                else { i++; }
+            }
+            for(let i = 0; i < backToBackGames.length; i++) {
+                if(backToBackGames[i].date === backToBackGames[i+1].date) backToBackGames.splice(i, 1);
+            }
+            // TODO: implement API.analyzeBackToBackGames(team, games) in analytics/game.js
+            let backToBackAnalysis = API.analyzeBackToBackGames(team, backToBackGames);
 
             let divAnalysis = new DivisionAnalysis(team);
             divAnalysis.analyzeGameData(gameDatas);
@@ -77,16 +89,16 @@ async function SeasonAnalysis(team, isHome) {
                     game: games.map(g => g.toGameData().getGoalsBy(team)).reduce((res, goals) => res + goals, 0) / games.length
                 }, // Goals for [periods...], game
                 GAA: {
-                    periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getGoalsByPeriod(g.toGameData().getOtherTeamName(team), p)).reduce((res, goals) => res + goals, 0) / games.length),
-                    game: games.map(g => g.toGameData().getGoalsBy(g.toGameData().getOtherTeamName(team))).reduce((res, goals) => res + goals, 0) / games.length
+                    periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getGoalsByPeriod(g.toGameData().getOpponentTeamName(team), p)).reduce((res, goals) => res + goals, 0) / games.length),
+                    game: games.map(g => g.toGameData().getGoalsBy(g.toGameData().getOpponentTeamName(team))).reduce((res, goals) => res + goals, 0) / games.length
                 }, // Goals against [periods...], game
                 SFA: {
                     periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getShotsByPeriod(team, p)).reduce((res, shots) => res + shots, 0) / games.length),
                     game: games.map(g => g.toGameData().getShotsBy(team)).reduce((res, shots) => res + shots, 0) / games.length
                 }, // Shots for [periods...], game
                 SAA: {
-                    periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getShotsByPeriod(g.toGameData().getOtherTeamName(team), p)).reduce((res, shots) => res + shots, 0) / games.length),
-                    game: games.map(g => g.toGameData().getShotsBy(g.toGameData().getOtherTeamName(team))).reduce((res, shots) => res + shots, 0) / games.length,
+                    periods: [...Array(4).keys()].filter(i => i > 0).map(p => games.map(g => g.toGameData().getShotsByPeriod(g.toGameData().getOpponentTeamName(team), p)).reduce((res, shots) => res + shots, 0) / games.length),
+                    game: games.map(g => g.toGameData().getShotsBy(g.toGameData().getOpponentTeamName(team))).reduce((res, shots) => res + shots, 0) / games.length,
                 },
                 divisionAnalysis: divAnalysis
                 // Shots against [periods...], game
@@ -96,10 +108,6 @@ async function SeasonAnalysis(team, isHome) {
                 PDOAverage: PDOAverage(this.GAA.game, this.SAA.game, this.GFA.game, this.SFA.game)
                 */
             };
-            console.log("SAA: " + r.SAA.game);
-            console.log(`SAA periods: ${[...r.SAA.periods]}`);
-            console.log("SFA: " + r.SFA.game);
-            console.log(`SFA periods: ${[...r.SFA.periods]}`);
 
             return r;
         });
@@ -143,7 +151,7 @@ async function AnalyzeResultAndTeamsOfLastFiveGames(team) {
         // to find out, what was the stats the other team had coming in to that game, and what role it (might) play
         // in the result in the game between team vs opponent.
         let result = lastFiveGames.map(g => g.toGameData()).map(async gd => {
-            let p_oppAnalysis = TrendAnalysisBefore(gd.getOtherTeamName(team), gd.date, 5);     // TODO: Define & Implement
+            let p_oppAnalysis = TrendAnalysisBefore(gd.getOpponentTeamName(team), gd.date, 5);     // TODO: Define & Implement
             let p_teamAnalysis = TrendAnalysisBefore(team, gd.date, 5);                  // TODO: Define & Implement
             return await Promise.all([p_oppAnalysis, p_teamAnalysis]).then(values => {
                 let [oppAnalysis, teamAnalysis] = values;
@@ -298,11 +306,11 @@ async function TrendAnalysisBefore(team, date, span) {
 
     return API.findLastXGamesByTeamBefore(team, date, span).then(games => {
         let gds = games.map(g => g.toGameData());
-        let GAGameAverage = PF((gds.map(gd => gd.getGoalsBy(gd.getOtherTeamName(team))).reduce((res, goals) => res + goals) / span).toFixed(4));
+        let GAGameAverage = PF((gds.map(gd => gd.getGoalsBy(gd.getOpponentTeamName(team))).reduce((res, goals) => res + goals) / span).toFixed(4));
         let GFGameAverage = PF((gds.map(gd => gd.getGoalsBy(team)).reduce((res, goals) => res + goals) / span).toFixed(4));
-        let SAGameAverage = PF((gds.map(gd => gd.getShotsBy(gd.getOtherTeamName(team))).reduce((res, shots) => res+shots) / span).toFixed(4));
+        let SAGameAverage = PF((gds.map(gd => gd.getShotsBy(gd.getOpponentTeamName(team))).reduce((res, shots) => res+shots) / span).toFixed(4));
         let SFGameAverage = PF((gds.map(gd => gd.getShotsBy(team)).reduce((res, shots) => res + shots) / span).toFixed(4));
-        let SavePercentAverage = 1-PF(( (gds.map(gd => gd.getGoalsBy(gd.getOtherTeamName(team))).reduce((res, goals) => res + goals)) / (gds.map(gd => gd.getShotsBy(gd.getOtherTeamName(team))).reduce((res, shots) => res+shots))).toFixed(4));
+        let SavePercentAverage = 1-PF(( (gds.map(gd => gd.getGoalsBy(gd.getOpponentTeamName(team))).reduce((res, goals) => res + goals)) / (gds.map(gd => gd.getShotsBy(gd.getOpponentTeamName(team))).reduce((res, shots) => res+shots))).toFixed(4));
         let Corsi = CorsiAverage(SFGameAverage, SAGameAverage);
         let PDO = PDOAverage(GAGameAverage, SAGameAverage, GFGameAverage, SFGameAverage);
         let result = { team: team, GAA: GAGameAverage, GFA: GFGameAverage, SAA: SAGameAverage, SFA: SFGameAverage, PDO: PDO, Corsi: Corsi, Save: SavePercentAverage };
@@ -344,7 +352,8 @@ async function SpanAnalysis(team, isHome) {
             let last_5_games = games.map(g => g);
             last_5_games.splice(0, games.length/2);
 
-            let last_5 = last_5_games.map(g => g.toGameData()).map(gd => ({ won: gd.winner === team, opponent: gd.getOtherTeamName(team), result: gd.finalResult, date: gd.date }));
+            let last_5 = last_5_games.map(g => g.toGameData()).map(gd => ({ won: gd.winner === team, opponent: gd.getOpponentTeamName(team), result: gd.finalResult, date: gd.date, periods: gd.periods }));
+            let spanDaysLast5Played = (last_5[4].date - last_5[0].date) / (1000 * (60*60*24));
 
             let PK = {
                 trendChartData: PK_data.map(pk_stats => Number.parseFloat(pk_stats.pct.toFixed(3))),
@@ -379,6 +388,7 @@ async function SpanAnalysis(team, isHome) {
                 EmptyNetGoals: API.EmptyNetScoring(team, empty_net_games),
                 EmptyNetLetUps: API.EmptyNetLetUps(team, lostGames),
                 LastFive: last_5,
+                LastFivePlayedSpan: Math.floor(spanDaysLast5Played),
                 passed: true
             };
         }).catch(err => {
@@ -464,6 +474,8 @@ let AnalyzeComingGameRoute = {
             let [homeAnalysis, awayAnalysis, homeSeason, awaySeason] = values;
             let homeTeam = { name: gameInfo.teams.home, division: getDivision(gameInfo.teams.home) };
             let awayTeam = { name: gameInfo.teams.away, division: getDivision(gameInfo.teams.away) };
+            homeSeason.divisionAnalysis = homeSeason.divisionAnalysis.getOpponentDivisionResults(gameInfo.teams.away);
+            awaySeason.divisionAnalysis = awaySeason.divisionAnalysis.getOpponentDivisionResults(gameInfo.teams.home);
                 return {
                     teams: {home: homeTeam, away: awayTeam}, // just for division data
                     homeTeamSpanAnalysis: homeAnalysis,
@@ -504,7 +516,7 @@ let TeamRoute = {
                 return games.map(g => g.toGameData()).map(gd => {
                     return {
                         won: (gd.winner === teamName),
-                        vs: gd.getOtherTeamName(teamName),
+                        vs: gd.getOpponentTeamName(teamName),
                         firstScoring: gd.getScoringTeam() === teamName,
                         periodGoalData: gd.periods,
                     }

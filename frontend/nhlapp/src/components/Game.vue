@@ -7,10 +7,10 @@
     </h1>
     <div class="columns">
       <div class="column">
-        <game-team :analysis="awayAnalysis" :season="awaySeason" :team="awayTeam"></game-team>
+        <game-team :analysis="awayAnalysis" :season="awaySeason" :team="awayTeam" :opponent="homeTeam"></game-team>
       </div>
       <div class="column">
-        <game-team :analysis="homeAnalysis" :season="homeSeason" :team="homeTeam"></game-team>
+        <game-team :analysis="homeAnalysis" :season="homeSeason" :team="homeTeam" :opponent="awayTeam"></game-team>
       </div>
     </div>
     <div>
@@ -129,12 +129,7 @@ export default {
       this.awayTeam = this.awayAnalysis.team
       this.homeSeason = res.data.homeTeamSeasonAnalysis
       this.awaySeason = res.data.awayTeamSeasonAnalysis
-      console.log(`Home season object instanceof==object: ${this.homeSeason instanceof Object}`)
-      console.log(`Goals against period average for home team: ${this.homeAnalysis.GAAverage.periods.trendChartData}`)
 
-      // first, get the gameInfo data, that is linked to gameID.
-      // then, populate team names & date played.
-      // After this is done, send a request to analyze the teams history.
       this.loading = false
     }).catch(err => {
       if (err) {
