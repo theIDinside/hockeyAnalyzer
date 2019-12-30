@@ -23,6 +23,19 @@ const pass = process.env.NHLPASS;
 const SEASON=process.env.SEASON; // HAS TO BE IN THE FORMAT OF STARTINGYEAR/ENDYEAR: 19/20, 20/21 etc... 
 const remoteDB = `mongodb://${user}:${pass}@ds125945.mlab.com:25945/nhl`;
 
+const processAndLogError = (errObj, localityString) => {
+    let func = `In function: ${localityString}`;
+    let logdata = UTIL.dumpErrorStackTrace(errObj, func);
+    require("fs").appendFile("./error.log", logdata, (err) => {
+        if(err) {
+            console.log(`Could not log error data due to error message: ${err}`);
+            throw err;
+        } else {
+            console.log("Saved log data to error.log");
+        }
+    });
+}
+
 const mongoDBHost = () => {
     if(process.env.DEBUGDB === "ON")
         return `mongodb://localhost/nhltest`;
@@ -56,7 +69,7 @@ async function getGameIDRange(start, end) {
     // For example, if we want all games up until today, we dont want to scrape today, since it has most likely not been played yet
     let beginID = getGameIDsAtDate(start);
     let endID = getGameIDsAtDate(end);
-
+    console.log(`Begin and end: ${start} ${end}`);
     return Promise.all([beginID, endID]).then(values => {
         let res1 = values[0];
         let res2 = values[1];
@@ -94,6 +107,7 @@ async function scrapeGames(startID=null, endID=null) {
     }
     console.log(`Begin id to scrape: ${seasonGameIDBegin}, ending ID: ${seasonGameIDEnd}`);
     let [start, end] = setupDates("19/20");
+    console.log(`Start date: ${start} and end date: ${end}`);
     let gameRange = await getGameIDRange(start, end);
     let gameCenterURLPrefix = `https://www.nhl.com/gamecenter/`;
     let summarySuffix = ",game_tab=stats";
@@ -132,26 +146,59 @@ async function scrapeGames(startID=null, endID=null) {
                     if(err)
                         throw err;
                 })
-            }).catch(err => {
-                let logdata = UTIL.dumpErrorStackTrace(err);
-                require("fs").writeFile("./error.log", logdata, err => {
-                    if(err) {
-                        throw err;
-                    }
-                    console.log("Saved log data to error.log");
-                });
             });
             await page.close();
         };
-        await func().catch(err =>
-        {
-            let logdata = UTIL.dumpErrorStackTrace(err);
-            require("fs").writeFile("./error.log", logdata, err => {
-                if(err) {
-                    throw err;
-                }
-                console.log("Saved log data to error.log");
+        await func().catch(err => {
+            processAndLogError(err, "scrapeGames(startID, endID)");
+        });
+    }
+    browser.close();
+    return { games: gameRange.length, scraped: scrapedSuccessfully };
+}
+
+async function scrapeGamesWithIDs(gameIDs) {
+    let season = getSeason();
+    console.log(`Games to scrape: ${[...gameIDs]}`);
+    let gameRange = gameIDs;
+    let gameCenterURLPrefix = `https://www.nhl.com/gamecenter/`;
+    let summarySuffix = ",game_tab=stats";
+
+    let scrapedSuccessfully = 0;
+    let browser = await puppeteer.launch();
+    for(let gid of gameRange) {
+        const func = async () => {
+            UTIL.l(`Scraping game: ${gid}`);
+            let gameCenterURL = `${gameCenterURLPrefix}${gid}`;
+            const page = await browser.newPage();
+            await page.goto(gameCenterURL);
+            let scrapeUrl = await page.url().concat(summarySuffix);
+            UTIL.l(`Requesting data from: ${scrapeUrl}... Please wait`);
+            await page.goto(scrapeUrl, {waitUntil: "networkidle2"});
+            const htmlData = await page.content();
+            let pGameDate = GameInfo.findOne({gameID: gid}).then(async doc => {
+                if(doc.datePlayed === null) console.log("ERROR RETRIEVING THE GAME DATE");
+                let pGameDate = doc.datePlayed;
+                return pGameDate;
             });
+            let pTeams = scrapeTeamsTotals(htmlData);
+            let gameSummary = getGameSummaryURL(gid);
+            let pPlayers = scrapePlayerTotals(htmlData);
+            let pScoringSummary = scrapeGameSummaryReport(gameSummary);
+            let pShotsPeriod = scrapeShotsOnGoal(htmlData);
+            await Promise.all([pGameDate, pTeams, pPlayers, pScoringSummary, pShotsPeriod]).then(values => {
+                let [gameDate, [aTeam, hTeam], [aPlayers, hPlayers], scoringSummary, shotsOnGoal] = values;
+                createGameDocument(gid.toString(), gameDate, aTeam, hTeam, aPlayers, hPlayers, shotsOnGoal, scoringSummary).then(document => {
+                    document.save().then(_ => scrapedSuccessfully++);
+                }).catch(err => {
+                    if(err)
+                        throw err;
+                })
+            });
+            await page.close();
+        };
+        await func().catch(err => {
+            processAndLogError(err, "scrapeGamesWithIDs(gameIDs: [])");
         });
     }
     browser.close();
@@ -393,7 +440,7 @@ async function processCalendar(data) {
                 let scan = async () => {
                     for(let i = 2019020001; i <= seasonGameIDEnd; i++) {
                         // TODO: scan database and fill in whatever gaps there are
-                        GameInfo.findOne({gameID: i}).then(async doc => {
+                        await GameInfo.findOne({gameID: i}).then(async doc => {
                             if(doc === null || doc === undefined)  {
                                 console.log(`FOUND MISSING GAME ${i}. Attempting to scrape info...`);
                                 let browser = await puppeteer.launch();
@@ -446,27 +493,32 @@ async function processCalendar(data) {
                 }
             });
         } else if(OPERATION.toUpperCase() === "VALIDATE") {
-            Game.countDocuments({}).then(async res => {
-               console.log(`Result of count is: ${res}`);
-               let begin = 2019020001;
-               let end_id = begin + (res-1);
-               let dowork = async () => {
-                   let missing_games = [];
-                   for(let i = begin; i <= end_id; ++i) {
-                       Game.find({gameID: i}).then(doc => {
-                           if(doc === null || doc === undefined) {
-                               console.log(`Couldn't find game with id ${i}. Be sure to scrape these games.`);
-                               missing_games.push(i);
-                           }
-                       });
-                   }
-                   return missing_games;
-               };
-                await dowork().then(missing_games => {
-                    console.log(`Done validating DB contents. There were ${missing_games.length} games missing. ${(missing_games.length !== 0 ? [...missing_games] : "")}`);
-                    db.close();
-                });
-            });
+            let res = await Game.count();
+            console.log(`Count resulted in: ${res}`);
+            let begin = 2019020001;
+            let end = await findTodaysGames("nhl").then(games => games[0].gameID - 1);
+            console.log(`End id to search towards: ${end}`);
+            let dowork = async () => {
+                let missing_games = [];
+                for(let i = begin; i <= end; ++i) {
+                    await Game.findOne({gameID: i}).then(doc => {
+                        if(doc === null || doc === undefined) {
+                            console.log(`Couldn't find game with id ${i}. Be sure to scrape these games.`);
+                            missing_games.push(i);
+                        }
+                    });
+                }
+                return missing_games;
+            };
+             await dowork().then(async missing_games => {
+                 console.log(`Done validating DB contents. There were ${missing_games.length} games missing. ${(missing_games.length !== 0 ? [...missing_games] : "")}. Beginning scraping...`);
+                 await scrapeGamesWithIDs(missing_games).then(res => {
+                    UTIL.l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
+                 });
+                 db.close();
+             }).catch(err => {
+
+             });
         } else if(OPERATION === "ALL") {
             let [seasonGameIDBegin, seasonGameIDEnd] = getFullGameIDRange(2019);
             let _ = scrapeGameInfo().then(async _ => {

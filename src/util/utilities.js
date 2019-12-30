@@ -10,10 +10,12 @@ const Float = (fstr) => Number.parseFloat(fstr);
 
 const dateString = (date) => {
     let res = date.toLocaleDateString();
-    let restmp = res.split("-");
-    let y = Number.parseInt(restmp[0]);
-    let mNum = Number.parseInt(restmp[1]);
-    let dNum = Number.parseInt(restmp[2]);
+    console.log("Res date: " + res);
+    let restmp = res.split("/");
+    let [M, D, Y] = restmp;
+    let y = Number.parseInt(Y);
+    let mNum = Number.parseInt(M);
+    let dNum = Number.parseInt(D);
     return `${y}-${(mNum < 10) ? `0${mNum}` : mNum}-${(dNum < 10) ? `0${dNum}` : dNum}`
 };
 const dateStringify = (date) => dateString(date);
@@ -39,24 +41,24 @@ const type = (obj) => {
 };
 
 function dumpErrorStackTrace(err, msg="") {
+
     if(err) {
         console.log(msg);
         console.error(`\nError Message: ${err.message}`);
         console.error(`Stack: ${err.stack}`)
-        return`Error message: ${err.message}\n Stack trace: ${err.stack}`;
+        return`Logged: ${new Date().toLocaleString()}\n${msg}\nError message: ${err.message}\n Stack trace: ${err.stack}\n\n`;
     }
 }
 
 function daysFromDate(date, amount) {
     let tzOff = date.getTimezoneOffset() * 60 * 1000,
         t = date.getTime(),
-        d = new Date(),
-        tzOff2;
-  
+        d = new Date();
+
     t += (1000 * 60 * 60 * 24) * amount;
     d.setTime(t);
   
-    tzOff2 = d.getTimezoneOffset() * 60 * 1000;
+    let tzOff2 = d.getTimezoneOffset() * 60 * 1000;
     if (tzOff != tzOff2) {
       let diff = tzOff2 - tzOff;
       t += diff;
