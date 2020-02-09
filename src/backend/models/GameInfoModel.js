@@ -79,13 +79,33 @@ async function findTodaysGames(league="nhl") {
                 });
                 return res;
             } else {
-                console.log(`Found no games between ${date} and ${tomorrow}`);
+                console.log(`Found no games between ${date} and ${tomorrow}. Returning last (regular season) game played.`);
+                GameInfo.find({ datePlayed: { $lt: d } }).then(res => {
+                    let gameIDs = res.map(gInfo => gInfo.gameID).sort();
+                });
+                
                 return []
             }
         })
     } else if(l === "SHL") {
         console.log("ERROR: SHL FUNCTIONALITY NOT YET IMPLEMENTED");
         return [];
+    }
+}
+
+async function findLastPlayedGameID(league="NHL", regSeasonOnly=true) {
+    if(regSeasonOnly) {
+        let date_str = new Date().toLocaleString("en-us", { timeZone: "America/New_York"}); // All games are shown in Eastern Time, on www.nhl.com
+        let date = new Date(date_str);
+        let midnight = date.toISOString().split("T")[0];
+        let d = new Date(midnight);
+        console.log("Searching for all games played up until: " + d);
+        let res = await GameInfo.find({datePlayed: { $lte: d}}).then(gs => {
+            return gs;
+        });
+        let lastGame = res.sort((a, b) => a.gameID - b.gameID)[res.length-1];
+        console.log(`Last played game's ID: ${lastGame}`);
+        return lastGame.gameID;
     }
 }
 
@@ -129,4 +149,4 @@ GameInfoSchema.post("save", (gInfoDoc) => {
 
 let GameInfo = mongoose.model("GameInfo", GameInfoSchema);
 
-module.exports = { GameInfo, findTodaysGames};
+module.exports = { GameInfo, findTodaysGames, findLastPlayedGameID};

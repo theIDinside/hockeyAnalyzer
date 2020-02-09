@@ -3,12 +3,12 @@
     MongoDB. Run this once. Running this multiple times, should result in basically clearing the DB and refreshing the DB.
 */
 const {getGameSummaryURL, getGameIDsAtDate, scrapeGameSummaryReport } = require('./scrape/GameScrape');
-const {getGameDate,scrapeShotsOnGoal,scrapePlayerTotals,GoalieStat,PlayerStat,scrapeTeamsTotals,TeamTotal} = require('./scrape/GameStats');
+const {scrapeShotsOnGoal,scrapePlayerTotals,scrapeTeamsTotals} = require('./scrape/GameStats');
 const UTIL = require('./util/utilities')
-const {teams, getFullTeamName, getSeasonStart} = require("./util/constants");
+const {getFullTeamName, getSeasonStart} = require("./util/constants");
 const puppeteer = require('puppeteer');
-const {createGameDocument, Game, getLastXGamesPlayedBy} = require('./backend/models/GameModel');
-const { GameInfo, findTodaysGames }= require("./backend/models/GameInfoModel");
+const {createGameDocument, Game} = require('./backend/models/GameModel');
+const { GameInfo, findTodaysGames, findLastPlayedGameID }= require("./backend/models/GameInfoModel");
 const mongoose = require('mongoose');
 
 const SCHEDULE_FILE = "2019_2020_NHL_Schedule.csv";
@@ -418,7 +418,7 @@ async function processCalendar(data) {
     return calendar;
 }
 
-
+// Immediately running function. The "main" if you will, of this setup node script.
 (async () => {
     console.log("Setting up database.");
     console.log(`Connecting to database... @${mongoDBHost()}`);
@@ -462,11 +462,6 @@ async function processCalendar(data) {
                     });
                 });
             });
-            // TODO: Here we need to go over all the Game Info entries in the database
-            // and update the Date for each one so they have the correct time, otherwise all will be set to 00:00.
-            // to do this, we must read the file 2019_2020_NHL_Schedule.csv
-            let line_number = 0;
-            let game_id = 2019020001;
         } else if(OPERATION === "GAMES_ONLY") {
             await Game.find({}).sort({gameID: -1}).limit(1).exec((err, games) => {
                 if(games.length > 0) {
@@ -496,7 +491,7 @@ async function processCalendar(data) {
             let res = await Game.count();
             console.log(`Count resulted in: ${res}`);
             let begin = 2019020001;
-            let end = await findTodaysGames("nhl").then(games => games[0].gameID - 1);
+            let end = await findLastPlayedGameID();
             console.log(`End id to search towards: ${end}`);
             let dowork = async () => {
                 let missing_games = [];
@@ -516,8 +511,6 @@ async function processCalendar(data) {
                     UTIL.l(`Out of ${res.games} games, scraped ${res.scraped} successfully`);
                  });
                  db.close();
-             }).catch(err => {
-
              });
         } else if(OPERATION === "ALL") {
             let [seasonGameIDBegin, seasonGameIDEnd] = getFullGameIDRange(2019);

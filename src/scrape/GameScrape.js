@@ -49,7 +49,7 @@ async function getGameIDsAtDate(date) {
         let currDate = new Date(date);
         let stopDate = new Date(currDate);
         stopDate.setUTCDate(stopDate.getUTCDate() + 1);
-        date = dateString(date);
+        date = dateStringify(date);
         console.log(`Games at date: ${date}`);
         let gamesDateURL = `https://www.nhl.com/scores/${date}`;
         const browser = await puppeteer.launch();
